@@ -1,129 +1,105 @@
-- name: Ensure containerd is not present
-  become: yes
-  apt:
-    name: containerd.io
-    state: absent
-    update_cache: yes
-  when: clean_kube is defined
+---
+# ========================= ABSENT =========================
+- name: "Containerd | Remove"
+  when: containerd_state == 'absent'
+  become: true
+  block:
+    - name: "Stop & disable service"
+      ansible.builtin.systemd:
+        name: containerd
+        state: stopped
+        enabled: false
+      failed_when: false
 
-- name: create key directory if not exists ..
-  become: yes
-  file:
-    path: /etc/apt/keyrings
-    state: directory
-  when: clean_kube is defined
+    - name: "Remove containerd package"
+      ansible.builtin.apt:
+        name: containerd.io
+        state: absent
+        update_cache: true
 
-- name: Adding containerd key ..
-  become: yes
-  apt_key:
-    url:  https://download.docker.com/linux/ubuntu/gpg
-    keyring: /etc/apt/keyrings/docker.gpg
-    state: present
-  when: clean_kube is defined
+    - name: "Remove config directories"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/containerd
+        - "{{ containerd_registry_config_path }}"
+        - /etc/systemd/system/containerd.service.d
 
-- name: Adding containerd repo ...
-  become: yes
-  apt_repository:
-    repo: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu focal stable
-    state: present
-    filename: docker.list
-  when: clean_kube is defined
+# ========================= PRESENT =========================
+- name: "Containerd | Install & configure"
+  when: containerd_state == 'present'
+  become: true
+  block:
+    - name: "Ensure keyrings dir exists"
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
 
-- name: install containerd
-  become: yes
-  apt:
-    name: containerd.io={{ containerd_version }}
-    state: present
-    update_cache: yes
-    allow_downgrade: yes
-  when: clean_kube is defined
+    - name: "Add Docker APT key (for containerd)"
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        keyring: /etc/apt/keyrings/docker.gpg
+        state: present
 
-- name: enabling containerd
-  become: yes
-  service:
-    name: containerd
-    enabled: true
-  when: clean_kube is defined
+    - name: "Add Docker APT repo"
+      ansible.builtin.apt_repository:
+        repo: >
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
+          https://download.docker.com/linux/ubuntu focal stable
+        filename: docker
+        state: present
+        update_cache: true
 
-- name: create containerd directory if not exists ..
-  become: yes
-  file:
-    path: /etc/containerd
-    state: directory
-  when: clean_kube is defined
+    - name: "Install containerd.io"
+      ansible.builtin.apt:
+        name: "containerd.io{{ ('=' + containerd_version) if containerd_version | length > 0 else '' }}"
+        state: present
+        update_cache: true
+        allow_downgrade: true
 
-- name: create data directory if not exists ..
-  become: yes
-  file:
-    path: /mnt/data
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
-  when: clean_kube is defined
+    - name: "Ensure config directories exist"
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /etc/containerd
+        - "{{ containerd_registry_config_path }}"
+        - /etc/systemd/system/containerd.service.d
+        - "{{ containerd_root | dirname }}"
 
-- name: ensure containerd file is not present
-  shell: rm -f /etc/containerd/config.toml
-  become: yes
-  when: clean_kube is defined
+    # On génère un config minimal (pas besoin de 'containerd config default')
+    - name: "Write /etc/containerd/config.toml (minimal)"
+      ansible.builtin.template:
+        src: config.toml.j2
+        dest: /etc/containerd/config.toml
+        mode: "0644"
 
-- name: init containerd config
-  shell: /usr/bin/containerd config default > /etc/containerd/config.toml
-  become: yes
-  when: clean_kube is defined
+    # Définition des registries via hosts.toml dédiés
+    - name: "Create hosts.toml per registry"
+      ansible.builtin.template:
+        src: hosts.toml.j2
+        dest: "{{ containerd_registry_config_path }}/{{ registry.host }}:{{ registry.port }}/hosts.toml"
+        mode: "0644"
+      loop: "{{ containerd_registries }}"
+      loop_control:
+        loop_var: registry
 
-- name: set systemd cgroup
-  replace:
-    path: /etc/containerd/config.toml
-    regexp: 'SystemdCgroup = false'
-    replace: 'SystemdCgroup = true'
-  become: yes
-  when: clean_kube is defined
+    - name: "Configure systemd proxy (optional)"
+      when: containerd_proxy | length > 0
+      ansible.builtin.template:
+        src: http-proxy.conf.j2
+        dest: /etc/systemd/system/containerd.service.d/http-proxy.conf
+        mode: "0644"
 
-- name: set systemd cgroup
-  replace:
-    path: /etc/containerd/config.toml
-    regexp: '^root = .*'
-    replace: 'root = "/mnt/data/containerd"'
-  become: yes
-  when: clean_kube is defined
+    - name: "Daemon-reload"
+      ansible.builtin.systemd:
+        daemon_reload: true
 
-- name: insert private registry mirrors
-  blockinfile:
-    path: /etc/containerd/config.toml
-    marker: "# {mark} mirrors"
-    insertafter: '.*registry.mirrors]'
-    block: "{{ lookup('ansible.builtin.template', './templates/mirror_template') | indent(width=8, first=True)}}"
-  become: yes
-
-- name: insert private registry auths
-  blockinfile:
-    path: /etc/containerd/config.toml
-    marker: "# {mark} auths"
-    insertafter: '.*registry.configs]'
-    block: "{{ lookup('ansible.builtin.template', './templates/auths_template') | indent(width=8, first=True)}}"
-  become: yes
-
-- name: create systemd containerd folder
-  become: yes
-  file:
-    path: /etc/systemd/system/containerd.service.d
-    state: directory
-
-- name: add container proxy
-  template:
-    src: templates/container-http.conf
-    dest: "/etc/systemd/system/containerd.service.d/http-proxy.conf"
-    owner: root
-    group: root
-    mode: 0755
-  when: containerd_proxy != ""
-  become: yes
-
-- name: "restart containerd"
-  service:
-    name: "containerd"
-    state: restarted
-    enabled: yes
-  become: yes
-
+    - name: "Enable & restart containerd"
+      ansible.builtin.systemd:
+        name: containerd
+        enabled: true
+        state: restarted

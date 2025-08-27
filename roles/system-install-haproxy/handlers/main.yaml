@@ -1,12 +1,26 @@
-- name: "restart haproxy"
-  service:
-    name: "haproxy"
-    state: restarted
-    enabled: yes
-  become: yes
-- name: "restart keepalived"
-  service:
-    name: "keepalived"
-    state: restarted
-    enabled: yes
-  become: yes
+---
+# HAProxy: on valide puis on redémarre. Si la validation échoue, pas de restart.
+- name: "haproxy | validate & restart"
+  listen: "haproxy | validate & restart"
+  become: true
+  block:
+    - name: "HAProxy | validate config"
+      ansible.builtin.command: haproxy -c -f /etc/haproxy/haproxy.cfg
+      changed_when: false
+    - name: "HAProxy | restart"
+      ansible.builtin.systemd:
+        name: haproxy
+        state: restarted
+
+# Keepalived: même principe (le binaire supporte le test de conf avec -t)
+- name: "keepalived | validate & restart"
+  listen: "keepalived | validate & restart"
+  become: true
+  block:
+    - name: "Keepalived | validate config"
+      ansible.builtin.command: keepalived -t -f /etc/keepalived/keepalived.conf
+      changed_when: false
+    - name: "Keepalived | restart"
+      ansible.builtin.systemd:
+        name: keepalived
+        state: restarted

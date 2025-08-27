@@ -1,0 +1,23 @@
+# Installer / retirer containerd
+containerd_state: present
+
+# Vide => dernière version dispo dans le repo Docker
+containerd_version: ""
+
+# Chemins
+containerd_root: "/mnt/data/containerd"
+containerd_registry_config_path: "/etc/containerd/certs.d"
+
+# Registries (exemples)
+containerd_registries:
+  - host: "10.33.1.94"
+    port: 5600
+    insecure: true
+    endpoints: ["http://10.33.1.94:5600"]
+  - host: "10.33.1.94"
+    port: 5500
+    insecure: true
+    endpoints: ["http://10.33.1.94:5500"]
+
+# Proxy (vide pour désactiver)
+containerd_proxy: ""
