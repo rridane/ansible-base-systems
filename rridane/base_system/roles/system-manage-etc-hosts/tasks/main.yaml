@@ -1,0 +1,13 @@
+- name: Manage /etc/hosts block (present/absent)
+  blockinfile:
+    path: /etc/hosts
+    marker: "# ANSIBLE-MANAGED {{ etc_hosts_block_name }} {mark}"
+    block: |-
+      {% for h in etc_hosts | default([]) %}
+      {% set aliases = (h.names | default([])) + ([h.hostname] if h.hostname is defined else []) %}
+      {{ h.ip }}  {{ aliases | unique | join(' ') }}{% if h.comment is defined and h.comment|trim %}  # {{ h.comment }}{% endif %}
+      {% endfor %}
+    state: "{{ etc_hosts_state | default('present') }}"
+    create: true
+    backup: "{{ etc_hosts_backup | default(true) }}"
+  become: true

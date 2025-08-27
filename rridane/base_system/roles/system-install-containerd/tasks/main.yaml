@@ -1,0 +1,129 @@
+- name: Ensure containerd is not present
+  become: yes
+  apt:
+    name: containerd.io
+    state: absent
+    update_cache: yes
+  when: clean_kube is defined
+
+- name: create key directory if not exists ..
+  become: yes
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+  when: clean_kube is defined
+
+- name: Adding containerd key ..
+  become: yes
+  apt_key:
+    url:  https://download.docker.com/linux/ubuntu/gpg
+    keyring: /etc/apt/keyrings/docker.gpg
+    state: present
+  when: clean_kube is defined
+
+- name: Adding containerd repo ...
+  become: yes
+  apt_repository:
+    repo: deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu focal stable
+    state: present
+    filename: docker.list
+  when: clean_kube is defined
+
+- name: install containerd
+  become: yes
+  apt:
+    name: containerd.io={{ containerd_version }}
+    state: present
+    update_cache: yes
+    allow_downgrade: yes
+  when: clean_kube is defined
+
+- name: enabling containerd
+  become: yes
+  service:
+    name: containerd
+    enabled: true
+  when: clean_kube is defined
+
+- name: create containerd directory if not exists ..
+  become: yes
+  file:
+    path: /etc/containerd
+    state: directory
+  when: clean_kube is defined
+
+- name: create data directory if not exists ..
+  become: yes
+  file:
+    path: /mnt/data
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  when: clean_kube is defined
+
+- name: ensure containerd file is not present
+  shell: rm -f /etc/containerd/config.toml
+  become: yes
+  when: clean_kube is defined
+
+- name: init containerd config
+  shell: /usr/bin/containerd config default > /etc/containerd/config.toml
+  become: yes
+  when: clean_kube is defined
+
+- name: set systemd cgroup
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+  become: yes
+  when: clean_kube is defined
+
+- name: set systemd cgroup
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: '^root = .*'
+    replace: 'root = "/mnt/data/containerd"'
+  become: yes
+  when: clean_kube is defined
+
+- name: insert private registry mirrors
+  blockinfile:
+    path: /etc/containerd/config.toml
+    marker: "# {mark} mirrors"
+    insertafter: '.*registry.mirrors]'
+    block: "{{ lookup('ansible.builtin.template', './templates/mirror_template') | indent(width=8, first=True)}}"
+  become: yes
+
+- name: insert private registry auths
+  blockinfile:
+    path: /etc/containerd/config.toml
+    marker: "# {mark} auths"
+    insertafter: '.*registry.configs]'
+    block: "{{ lookup('ansible.builtin.template', './templates/auths_template') | indent(width=8, first=True)}}"
+  become: yes
+
+- name: create systemd containerd folder
+  become: yes
+  file:
+    path: /etc/systemd/system/containerd.service.d
+    state: directory
+
+- name: add container proxy
+  template:
+    src: templates/container-http.conf
+    dest: "/etc/systemd/system/containerd.service.d/http-proxy.conf"
+    owner: root
+    group: root
+    mode: 0755
+  when: containerd_proxy != ""
+  become: yes
+
+- name: "restart containerd"
+  service:
+    name: "containerd"
+    state: restarted
+    enabled: yes
+  become: yes
+

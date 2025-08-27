@@ -1,0 +1,32 @@
+- name: Load required modules
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - br_netfilter
+    - overlay
+  become: yes
+  when: clean_kube is defined
+
+- name: Create the .conf file to load the modules at bootup
+  ansible.builtin.template:
+    src: templates/kernel_modules.conf
+    dest: /etc/modules-load.d/k8s.conf
+  become: yes
+  when: clean_kube is defined
+
+- name: Modify sysctl entries
+  ansible.posix.sysctl:
+    name: '{{ item.key }}'
+    value: '{{ item.value }}'
+    sysctl_set: yes
+    state: present
+    reload: yes
+    sysctl_file: /etc/sysctl.d/k8s.conf
+  ignore_errors: True
+  become: yes
+  with_items:
+    - {key: net.bridge.bridge-nf-call-ip6tables, value: 1}
+    - {key: net.bridge.bridge-nf-call-iptables,  value: 1}
+    - {key: net.ipv4.ip_forward,  value: 1}
+  when: clean_kube is defined

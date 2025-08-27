@@ -1,0 +1,51 @@
+- name: "apt update"
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: "install haproxy package using apt"
+  apt:
+    name: haproxy
+    state: present
+  become: yes
+
+- name: "Configure HAProxy"
+  template:
+    src: templates/haproxy.cfg
+    dest: "/etc/haproxy/haproxy.cfg"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart haproxy
+  become: yes
+
+- name: "Install keepalived package using apt"
+  apt:
+    name: keepalived
+    state: present
+  become: yes
+
+- name: "Configure {{ inventory_hostname }} keepalived"
+  template:
+    src: templates/keepalived_1.cfg
+    dest: "/etc/keepalived/keepalived.conf"
+    owner: root
+    group: root
+    mode: 0644
+  when: inventory_hostname == "lb1"
+  notify:
+    - restart keepalived
+  become: yes
+
+- name: "Configure {{ inventory_hostname }} keepalived"
+  template:
+    src: templates/keepalived_2.cfg
+    dest: "/etc/keepalived/keepalived.conf"
+    owner: root
+    group: root
+    mode: 0644
+  when: inventory_hostname == "lb2"
+  notify:
+    - restart keepalived
+  become: yes

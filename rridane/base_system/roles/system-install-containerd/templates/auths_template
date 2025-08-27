@@ -1,0 +1,4 @@
+{% for registry in registries %}
+[plugins."io.containerd.grpc.v1.cri".registry.configs."{{ registry.ip}}:{{registry.port}}".tls]
+  insecure_skip_verify = true
+{% endfor %}

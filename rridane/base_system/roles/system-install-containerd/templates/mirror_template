@@ -1,0 +1,4 @@
+{% for registry in registries %}
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{registry.ip}}:{{registry.port}}"]
+  endpoint = ["http://{{registry.ip}}:{{registry.port}}"]
+{% endfor %}

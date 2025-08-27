@@ -1,0 +1,10 @@
+- name: Disabling swap on hosts…
+  become: yes
+  shell: swapoff -a
+- name: Disabling swap from fstab…
+  become: yes
+  replace:
+    path: /etc/fstab
+    regexp: ‘^([^#].*?\swap\s+sw\s+.*)$’
+    replace: ‘# \1’
+  when: clean_kube is defined

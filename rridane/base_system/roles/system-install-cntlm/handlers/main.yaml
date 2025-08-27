@@ -1,0 +1,17 @@
+- name: daemon reload
+  systemd:
+    daemon_reload: yes
+  become: yes
+
+- name: enabling cntlm
+  become: yes
+  service:
+    name: cntlm
+    enabled: true
+
+- name: restart cntlm
+  service:
+    name: "cntlm.service"
+    state: restarted
+    enabled: yes
+  become: yes

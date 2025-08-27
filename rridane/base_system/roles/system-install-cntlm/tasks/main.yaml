@@ -1,0 +1,51 @@
+- name: apt update
+  apt:
+    update_cache: yes
+  become: yes
+
+- name: ensure cntlm systemd directory is not present
+  shell: rm -rf /etc/systemd/system/cntlm.service.d/
+  become: yes
+
+- name: installing c tools
+  apt:
+    name: build-essential
+    state: present
+  become: yes
+
+- name: Check if cntlm is installed and configured
+  stat:
+    path: "/etc/systemd/system/cntlm.service"
+  register: cntlm_conf
+
+- name: copy cntlm
+  copy:
+    src: templates/cntlm.tar
+    dest: /tmp
+  when: not cntlm_conf.stat.exists
+
+- name: untar and build
+  shell: cd /tmp && tar -xf cntlm.tar && cd cntlm && ./configure && make && make install
+  become: yes
+  when: not cntlm_conf.stat.exists
+
+- name: configure cntlm
+  template:
+    src: templates/cntlm.conf
+    dest: "/etc/cntlm.conf"
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+
+- name: add cntlm conf
+  template:
+    src: templates/systemd-cntlm.conf
+    dest: "/etc/systemd/system/cntlm.service"
+    owner: root
+    group: root
+    mode: 0755
+  become: yes
+  notify:
+    - daemon reload
+    - restart cntlm

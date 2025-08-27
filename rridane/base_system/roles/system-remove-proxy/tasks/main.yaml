@@ -1,0 +1,20 @@
+- name: clear_file
+  file:
+    path: "/etc/apt/apt.conf.d/http-proxy.conf"
+    state: absent
+  become: yes
+
+- name: remove http proxy
+  lineinfile:
+    path: /etc/environment
+    regex: '^https?_proxy.*'
+    state: absent
+  become: yes
+
+- name: remove https proxy to systemd
+  become: yes
+  shell: systemctl unset-environment HTTP_PROXY
+
+- name: remove http proxy to systemd
+  become: yes
+  shell: systemctl unset-environment HTTPS_PROXY

@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  author: "Rida Ridane"
+  description: "Gère un bloc ansible-managed dans /etc/hosts (présence/absence)."
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions: ["bullseye", "bookworm"]
+    - name: Ubuntu
+      versions: ["20.04", "22.04", "24.04"]
+  galaxy_tags: ["hosts", "network", "bootstrap"]
+dependencies: []

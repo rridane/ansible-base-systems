@@ -1,0 +1,13 @@
+- name: download k9s
+  get_url:
+    url: https://github.com/derailed/k9s/releases/download/v0.26.7/k9s_Linux_x86_64.tar.gz
+    dest: /tmp/k9s.tar.gz
+  when: clean_kube is defined
+
+- name: untar
+  unarchive:
+    src: /tmp/k9s.tar.gz
+    dest: /usr/local/bin
+    remote_src: yes
+  become: yes
+  when: clean_kube is defined
