@@ -1,0 +1,78 @@
+---
+- name: "Kubernetes | Reset & purge (absent)"
+  become: true
+  when: kube_state == 'absent'
+  block:
+    - name: "[clean] kubeadm reset"
+      command: >
+        kubeadm reset --force --cri-socket={{ kube_cri_socket }}
+      register: _reset
+      failed_when: false
+      changed_when: _reset.rc == 0
+
+    - name: "[clean] remove kubernetes packages"
+      apt:
+        name: "{{ item }}"
+        state: absent
+        update_cache: true
+      loop:
+        - kubeadm
+        - kubelet
+        - kubectl
+
+    - name: "[clean] remove CNI config directory"
+      file:
+        path: /etc/cni/net.d
+        state: absent
+
+    - name: "[clean] down cni interfaces (best effort)"
+      ansible.builtin.command: ip link set {{ item }} down
+      loop:
+        - cni0
+        - flannel.1
+      failed_when: false
+      changed_when: false
+
+    - name: "[clean] delete cni interfaces (best effort)"
+      ansible.builtin.command: ip link delete {{ item }}
+      loop:
+        - cni0
+        - flannel.1
+      failed_when: false
+      changed_when: false
+
+- name: "Kubernetes | Install (present)"
+  become: true
+  when: kube_state == 'present'
+  block:
+    - name: "Ensure /etc/apt/keyrings exists"
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: "Add Kubernetes APT key"
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        keyring: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+        state: present
+
+    - name: "Add Kubernetes APT repository"
+      ansible.builtin.apt_repository:
+        repo: >
+          deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg]
+          https://apt.kubernetes.io/ kubernetes-xenial main
+        filename: kubernetes
+        state: present
+        update_cache: true
+
+    - name: "Install kubeadm/kubelet/kubectl"
+      ansible.builtin.apt:
+        name: "{{ item }}{{ ('=' + kube_version) if kube_version | length > 0 else '' }}"
+        state: present
+        update_cache: true
+        allow_downgrade: true
+      loop:
+        - kubeadm
+        - kubelet
+        - kubectl

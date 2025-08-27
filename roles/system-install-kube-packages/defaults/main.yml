@@ -1,0 +1,8 @@
+# 'present' pour installer/mettre en place ; 'absent' pour purger/réinitialiser
+kube_state: present
+
+# Version Debian/Ubuntu (ex: "1.29.4-00"). Vide => dernière version dispo dans le repo.
+kube_version: ""
+
+# Chemin socket CRI
+kube_cri_socket: "/var/run/containerd/containerd.sock"

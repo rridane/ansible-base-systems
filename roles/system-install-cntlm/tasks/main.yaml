@@ -1,0 +1,152 @@
+---
+# ===== PRÉSENT =====
+- block:
+    - name: Preflight | source URL must be provided
+      assert:
+        that:
+          - (cntlm_source_url | length) > 0
+        fail_msg: "cntlm_source_url est requis pour la compilation depuis la source."
+      become: false
+
+    - name: Check if cntlm binary already exists
+      stat:
+        path: "{{ cntlm_bin_path }}"
+      register: cntlm_bin_present
+      become: true
+
+    - name: Install build toolchain (compile from source)
+      apt:
+        name:
+          - build-essential
+          - libssl-dev
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+      become: true
+
+    - name: Prepare build dir
+      file:
+        path: "{{ cntlm_build_dir }}"
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Download cntlm source tarball
+      get_url:
+        url: "{{ cntlm_source_url }}"
+        dest: "{{ cntlm_build_dir }}/cntlm.tar.gz"
+        mode: "0644"
+        checksum: "{{ cntlm_source_checksum | default(omit) }}"
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Unarchive source
+      unarchive:
+        src: "{{ cntlm_build_dir }}/cntlm.tar.gz"
+        dest: "{{ cntlm_build_dir }}"
+        remote_src: true
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Locate extracted source dir
+      find:
+        paths: "{{ cntlm_build_dir }}"
+        file_type: directory
+        patterns: "cntlm*"
+        depth: 1
+      register: _src_dirs
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Configure
+      command: ./configure
+      args:
+        chdir: "{{ (_src_dirs.files | sort(attribute='path') | last).path }}"
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Make
+      command: make
+      args:
+        chdir: "{{ (_src_dirs.files | sort(attribute='path') | last).path }}"
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Make install
+      command: make install
+      args:
+        chdir: "{{ (_src_dirs.files | sort(attribute='path') | last).path }}"
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Ensure legacy drop-in dir is absent
+      file:
+        path: /etc/systemd/system/cntlm.service.d
+        state: absent
+      become: true
+
+    - name: Render cntlm.conf
+      template:
+        src: cntlm.conf.j2
+        dest: "{{ cntlm_conf_path }}"
+        mode: "0644"
+        owner: root
+        group: root
+      become: true
+      notify: "{{ ['restart cntlm'] if cntlm_restart_on_change else [] }}"
+
+    - name: Install systemd unit
+      template:
+        src: cntlm.service.j2
+        dest: "{{ cntlm_unit_path }}"
+        mode: "0644"
+        owner: root
+        group: root
+      become: true
+      notify:
+        - daemon reload
+        - restart cntlm
+
+    - name: Enable & start service
+      systemd:
+        name: cntlm
+        enabled: true
+        state: started
+      become: true
+  when: cntlm_state == 'present'
+
+# ===== ABSENT =====
+- block:
+    - name: Stop & disable service
+      systemd:
+        name: cntlm
+        state: stopped
+        enabled: false
+      failed_when: false
+      become: true
+
+    - name: Remove systemd unit
+      file:
+        path: "{{ cntlm_unit_path }}"
+        state: absent
+      become: true
+      notify: [daemon reload]
+
+    - name: Remove configuration
+      file:
+        path: "{{ cntlm_conf_path }}"
+        state: absent
+      become: true
+
+    - name: Ensure legacy drop-in dir is absent
+      file:
+        path: /etc/systemd/system/cntlm.service.d
+        state: absent
+      become: true
+
+    - name: Remove cntlm binary (source install)
+      file:
+        path: "{{ cntlm_bin_path }}"
+        state: absent
+      become: true
+  when: cntlm_state == 'absent'

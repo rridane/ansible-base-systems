@@ -1,0 +1,17 @@
+# present => applique modules + sysctl ; absent => retire modules + sysctl et supprime les fichiers .conf
+net_tuning_state: present
+
+# Modules noyau à charger au boot et à chaud
+net_tuning_modules:
+  - overlay
+  - br_netfilter
+
+# Règles sysctl à appliquer (clé => valeur)
+net_tuning_sysctls:
+  net.bridge.bridge-nf-call-ip6tables: 1
+  net.bridge.bridge-nf-call-iptables: 1
+  net.ipv4.ip_forward: 1
+
+# Fichiers générés
+net_tuning_modules_conf_path: "/etc/modules-load.d/net-tuning.conf"
+net_tuning_sysctl_conf_path:  "/etc/sysctl.d/90-net-tuning.conf"

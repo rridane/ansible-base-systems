@@ -1,0 +1,23 @@
+# Ansible-managed CNTLM config
+Username    {{ cntlm_username }}
+{% if cntlm_domain %}Domain      {{ cntlm_domain }}{% endif %}
+{% if cntlm_pass_ntlmv2 %}
+PassNTLMv2  {{ cntlm_pass_ntlmv2 }}
+{% elif cntlm_password %}
+Password    {{ cntlm_password }}
+{% endif %}
+
+{% if cntlm_listen_host %}
+Listen      {{ cntlm_listen_host }}:{{ cntlm_listen_port }}
+{% else %}
+Listen      {{ cntlm_listen_port }}
+{% endif %}
+
+Proxy       {{ cntlm_upstream_host }}:{{ cntlm_upstream_port }}
+{% if cntlm_no_proxy and cntlm_no_proxy|length > 0 -%}
+NoProxy     {{ cntlm_no_proxy | join(',') }}
+{% endif %}
+
+{% for line in cntlm_extra_options %}
+{{ line }}
+{% endfor %}

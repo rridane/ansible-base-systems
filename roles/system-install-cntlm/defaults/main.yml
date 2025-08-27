@@ -1,0 +1,28 @@
+---
+# Etat désiré
+cntlm_state: present   # present | absent
+
+# Build depuis source (si package indispo)
+cntlm_source_url: ""         # ex: https://.../cntlm-0.92.3.tar.gz
+cntlm_source_checksum: ""    # ex: sha256:xxxx (optionnel mais recommandé)
+cntlm_build_dir: /usr/local/src/cntlm
+
+# Emplacements
+cntlm_bin_path: /usr/local/sbin/cntlm   # cible classique du "make install"
+cntlm_conf_path: /etc/cntlm.conf
+cntlm_unit_path: /etc/systemd/system/cntlm.service
+
+# Conf CNTLM
+cntlm_username: ""
+cntlm_domain: ""
+cntlm_password: ""        # ⚠️ préférez cntlm_pass_ntlmv2
+cntlm_pass_ntlmv2: ""     # hash généré via: cntlm -H
+cntlm_listen_host: ""     # "" => "Listen {{ cntlm_listen_port }}", sinon "host:port"
+cntlm_listen_port: 3128
+cntlm_upstream_host: 127.0.0.1
+cntlm_upstream_port: 3128
+cntlm_no_proxy: []        # ex: ['localhost','127.0.0.1','.svc','.cluster.local']
+cntlm_extra_options: []   # lignes libres ex: ['Auth LM','Allow 192.168.*']
+
+# Service
+cntlm_restart_on_change: true

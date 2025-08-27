@@ -1,0 +1,6 @@
+- name: "NFS | Manage nfs-common"
+  become: true
+  ansible.builtin.apt:
+    name: nfs-common
+    state: "{{ nfs_common_state }}"
+    update_cache: true
