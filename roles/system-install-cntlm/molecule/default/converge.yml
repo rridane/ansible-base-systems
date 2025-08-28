@@ -1,7 +1,7 @@
 ---
 - name: Converge
-  hosts: all
   become: true
   gather_facts: true
+  hosts: all
   roles:
-    - role: system-install-k9s
+    - role: system-install-cntlm

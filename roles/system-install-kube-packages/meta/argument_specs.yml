@@ -1,46 +1,38 @@
-# roles/system-add-etc-hosts-to-system/meta/argument_specs.yml
+# roles/system-install-kube-packages/meta/argument_specs.yml
 ---
 argument_specs:
   main:
-    short_description: Manage an Ansible-managed block in /etc/hosts
+    short_description: Install or purge Kubernetes components (kubeadm, kubelet, kubectl)
     description:
-      - Add, remove or update content of a named block of host entries in a target hosts file (default /etc/hosts).
-      - Declarative API via etc_hosts_state=present|absent.
+      - Manage installation or cleanup of Kubernetes packages.
+      - Uses official Kubernetes apt repositories from pkgs.k8s.io.
+      - State C(present) ensures packages are installed, state C(absent) resets and removes them.
     options:
-      etc_hosts:
-        type: list
-        elements: dict
-        required: false
-        description:
-          - List of host entries to render when state=present.
-          - Ignored when etc_hosts_state=absent.
-        options:
-          ip:
-            type: str
-            required: true
-            description: IPv4 or IPv6 address.
-          names:
-            type: list
-            elements: str
-            required: true
-            description: Hostnames/aliases for the IP (unique and ordered as given).
-          comment:
-            type: str
-            required: false
-            description: Optional trailing comment for the line.
-
-      etc_hosts_state:
+      kube_state:
         type: str
         choices: [present, absent]
         default: present
-        description: Whether the managed block must be present or removed.
-
-      etc_hosts_block_name:
+        description:
+          - Whether Kubernetes packages should be installed (C(present)) or purged (C(absent)).
+      kube_version:
         type: str
-        default: "ansible_managed_etc_hosts"
-        description: Logical name used in the block marker.
-
-      etc_hosts_backup:
-        type: bool
-        default: true
-        description: Backup the file before modifying it.
+        required: false
+        default: ""
+        description:
+          - Version string to install for kubeadm/kubelet/kubectl.
+          - If empty, the latest available in the repo is installed.
+          - Example: C("1.30.2-1.1").
+      kube_series:
+        type: str
+        required: false
+        default: "v1.30"
+        description:
+          - Kubernetes stable series to use for the apt repository.
+          - Used in pkgs.k8s.io path (C(v1.29), C(v1.30), etc.).
+      kube_cri_socket:
+        type: str
+        required: false
+        default: "/var/run/containerd/containerd.sock"
+        description:
+          - Path to CRI socket passed to kubeadm reset.
+          - Typically points to containerd or CRI-O runtime socket.

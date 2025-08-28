@@ -1,11 +1,3 @@
-# --- Start of {{ etc_hosts_block_name }} (ANSIBLE-MANAGED) ---
-{% for h in etc_hosts %}
-    {%- set ip = h.ip -%}
-    {%- set names = (h.names | unique) | join(' ') -%}
-    {%- if h.comment is defined and h.comment | trim != '' -%}
-        {{ ip }}  {{ names }}  # {{ h.comment }}
-    {%- else -%}
-        {{ ip }}  {{ names }}
-    {%- endif -%}
-{% endfor -%}
-# --- \{{ etc_hosts_block_name }} ---
+{% for h in etc_hosts | default([]) %}
+    {{ h.ip }}  {{ (h.names | default([]) | unique) | join(' ') }}{% if h.comment is defined and h.comment|trim %}  # {{ h.comment }}{% endif %}
+{% endfor %}

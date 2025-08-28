@@ -45,30 +45,64 @@
   become: true
   when: kube_state == 'present'
   block:
-    - name: "Ensure /etc/apt/keyrings exists"
-      file:
+    # You can parametrize the series if you want (v1.29, v1.30, v1.31…)
+    # kube_series should be a string like "v1.30"
+    - name: Set default kube_series if not provided
+      ansible.builtin.set_fact:
+        kube_series: "{{ kube_series | default('v1.30') }}"
+
+    - name: Ensure base packages for APT over HTTPS and gpg exist
+      become: true
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Ensure /etc/apt/keyrings exists
+      become: true
+      ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
         mode: "0755"
 
-    - name: "Add Kubernetes APT key"
-      apt_key:
-        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-        keyring: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
-        state: present
+    # Use pkgs.k8s.io Release.key (NOT the old apt.kubernetes.io apt-key.gpg)
+    - name: Download Kubernetes Release.key for the chosen series
+      become: true
+      ansible.builtin.get_url:
+        url: "https://pkgs.k8s.io/core:/stable:/{{ kube_series }}/deb/Release.key"
+        dest: /etc/apt/keyrings/kubernetes-release.key
+        mode: "0644"
 
-    - name: "Add Kubernetes APT repository"
+    # Dearmor into a proper keyring .gpg (APT requires the binary keyring)
+    - name: Dearmor Release.key into keyring
+      become: true
+      ansible.builtin.command:
+        cmd: >
+          gpg --dearmor
+          --yes
+          --output /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+          /etc/apt/keyrings/kubernetes-release.key
+      args:
+        creates: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+
+    # Add the new repository (pkgs.k8s.io). Note the “/” suite and no component.
+    - name: Add Kubernetes APT repository (pkgs.k8s.io)
+      become: true
       ansible.builtin.apt_repository:
         repo: >
           deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg]
-          https://apt.kubernetes.io/ kubernetes-xenial main
+          https://pkgs.k8s.io/core:/stable:/{{ kube_series }}/deb/ /
         filename: kubernetes
         state: present
         update_cache: true
 
-    - name: "Install kubeadm/kubelet/kubectl"
+    # Install the packages (pin exact version if kube_version is provided)
+    - name: Install kubeadm/kubelet/kubectl
+      become: true
       ansible.builtin.apt:
-        name: "{{ item }}{{ ('=' + kube_version) if kube_version | length > 0 else '' }}"
+        name: "{{ item }}{{ ('=' + kube_version) if (kube_version | length > 0) else '' }}"
         state: present
         update_cache: true
         allow_downgrade: true

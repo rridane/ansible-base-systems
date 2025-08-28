@@ -16,7 +16,6 @@ platforms:
   - name: debian-12
     image: "docker.io/geerlingguy/docker-debian12-ansible:latest"
     pre_build_image: true
-
 provisioner:
   name: ansible
   playbooks:
@@ -25,6 +24,53 @@ provisioner:
   config_options:
     defaults:
       callbacks_enabled: profile_tasks, timer
+  inventory:
+    group_vars:
+      all:
+        etc_hosts:
+          - ip: "10.0.0.11"
+            names: [ "k8s-master-1", "k8s-master-1.localdomain" ]
+            comment: "control-plane"
+          - ip: "10.0.0.12"
+            names: [ "k8s-master-2" ]
+            comment: "control-plane"
+          - ip: "10.0.0.21"
+            names: [ "k8s-worker-1", "k8s-worker-1.localdomain" ]
+            comment: ""
+        etc_hosts_state: present
+        etc_hosts_block_name: "etc_hosts"
+        etc_hosts_backup: true
+        etc_hosts_ensure_eof_newline: true
+    host_vars:
+      debian-12:
+        etc_hosts_state: absent
+      ubuntu-22:
+        etc_hosts:
+          - ip: "10.0.0.11"
+            names: [ "k8s-master-1", "k8s-master-1.localdomain" ]
+            comment: "control-plane"
+          - ip: "10.0.0.12"
+            names: [ "k8s-master-2" ]
+            comment: "control-plane"
+          - ip: "10.0.0.21"
+            names: [ "k8s-worker-1", "k8s-worker-1.localdomain" ]
+            comment: ""
+          - ip: "10.0.0.22"
+            names: [ "k8s-worker-2" ]
+            comment: "extra-for-ubuntu-22"
+      ubuntu-22-version-32:
+        etc_hosts_block_name: "etc_hosts_alt"
+        etc_hosts:
+          - ip: "10.0.0.11"
+            names: [ "k8s-master-1", "k8s-master-1.localdomain" ]
+            comment: "control-plane"
+          - ip: "10.0.0.12"
+            names: [ "k8s-master-2" ]
+            comment: "control-plane"
+          - ip: "10.0.0.23"
+            names: [ "k8s-worker-3" ]
+            comment: "alt-block"
+      ubuntu-20: { }
   env:
     ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
 

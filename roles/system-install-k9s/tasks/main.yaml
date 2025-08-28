@@ -22,10 +22,15 @@
   changed_when: false
   failed_when: false
 
+- name: "debug"
+  debug:
+    msg: "https://github.com/derailed/k9s/releases/download/v{{ k9s_effective_version }}/k9s_Linux_{{ k9s_arch }}.tar.gz"
+  changed_when: false
+
 - block:
     - name: "K9s | Download tarball"
       get_url:
-        url: "https://github.com/derailed/k9s/releases/download/v{{ k9s_effective_version }}/k9s_{{ k9s_arch }}.tar.gz"
+        url: "https://github.com/derailed/k9s/releases/download/v{{ k9s_effective_version }}/k9s_Linux_{{ k9s_arch }}.tar.gz"
         dest: "/tmp/k9s.tar.gz"
         mode: "0644"
 

@@ -20,16 +20,18 @@ platforms:
 provisioner:
   name: ansible
   playbooks:
-    prepare: prepare.yml
     converge: converge.yml
-  config_options:
-    defaults:
-      callbacks_enabled: profile_tasks, timer
+    verify: verify.yml
+  inventory:
+    group_vars:
+      all:
+        kube_state: present
+        kube_version: ""   # vide => dernière version
+        kube_cri_socket: "/var/run/containerd/containerd.sock"
+    host_vars:
+      ubuntu-22:
+        kube_state: present
+      ubuntu-20:
+        kube_state: absent
   env:
     ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
-
-verifier:
-  name: testinfra
-
-scenario:
-  name: default

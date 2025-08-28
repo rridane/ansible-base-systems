@@ -1,0 +1,10 @@
+- name: Converge
+  hosts: all
+  vars:
+    unit_name: "template-service.service"
+    unit_template_src: "templates/test-service.j2"
+    unit_scope: "system"
+    unit_state: "started"
+    unit_enabled: true
+  roles:
+    - role: system-add-systemd-unit

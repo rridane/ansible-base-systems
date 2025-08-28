@@ -1,10 +1,9 @@
 ---
 galaxy_info:
-  role_name: system_install_k9s
+  role_name: system_install_nfs_commons
   author: Rida Ridane
-  description: Installe K9s depuis les releases GitHub (dernière version par défaut ou version spécifiée).
+  description: Installe nfs commons
   license: MIT
-
   namespace: rridane
   platforms:
     - name: Debian
@@ -13,9 +12,7 @@ galaxy_info:
       versions: [focal, jammy]
 
   galaxy_tags:
-    - k9s
-    - kubernetes
-    - cli
+    - nfs
     - ops
     - devops
     - tooling

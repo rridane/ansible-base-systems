@@ -1,13 +1,87 @@
-- name: Manage /etc/hosts block (present/absent)
-  blockinfile:
+- name: Detect container
+  set_fact:
+    __in_container: "{{ (ansible_virtualization_type|default('')) in ['docker','podman'] }}"
+    __beg: "# ANSIBLE-MANAGED {{ etc_hosts_block_name }} BEGIN"
+    __end: "# ANSIBLE-MANAGED {{ etc_hosts_block_name }} END"
+
+# Corps désiré (sans marqueurs)
+- name: Build desired body
+  set_fact:
+    __body: |-
+      {%- for h in etc_hosts|default([]) -%}
+      {{- h.ip }}  {{ (h.names|default([])|unique)|join(' ') }}{%- if h.comment|default('')|trim %}  # {{ h.comment }}{%- endif %}
+      {% endfor -%}
+
+# Lire le fichier
+- slurp:
     path: /etc/hosts
-    marker: "# ANSIBLE-MANAGED {{ etc_hosts_block_name }} {mark}"
-    block: |-
-      {% for h in etc_hosts | default([]) %}
-      {% set aliases = (h.names | default([])) + ([h.hostname] if h.hostname is defined else []) %}
-      {{ h.ip }}  {{ aliases | unique | join(' ') }}{% if h.comment is defined and h.comment|trim %}  # {{ h.comment }}{% endif %}
-      {% endfor %}
-    state: "{{ etc_hosts_state | default('present') }}"
-    create: true
+  register: __hosts
+  become: true
+
+# Extraire le bloc actuel (sans marqueurs) + flags
+- set_fact:
+    __cur: >-
+      {{ (__hosts.content|b64decode)
+         | regex_search(__beg ~ '\n(.*?)\n' ~ __end, '\1', dotall=True)
+         | default('') }}
+    __has: "{{ (__hosts.content|b64decode).find(__beg) != -1 and (__hosts.content|b64decode).find(__end) != -1 }}"
+    __diff: "{{ __cur != __body }}"
+
+# state=absent → supprimer seulement s’il existe
+- replace:
+    path: /etc/hosts
+    regexp: "{{ (__beg|regex_escape) ~ '[\\s\\S]*?' ~ (__end|regex_escape) ~ '\\n?' }}"
+    replace: ""
     backup: "{{ etc_hosts_backup | default(true) }}"
+    unsafe_writes: "{{ __in_container }}"
+  when: (etc_hosts_state|default('present')) == 'absent' and __has
+  become: true
+
+- meta: end_host
+  when: (etc_hosts_state|default('present')) == 'absent'
+
+# Bloc présent et identique → ne rien faire
+- debug:
+    msg: "Block already up-to-date"
+  when: __has and not __diff
+
+# Bloc présent mais différent → le remplacer d’un coup
+- replace:
+    path: /etc/hosts
+    regexp: "{{ (__beg|regex_escape) ~ '[\\s\\S]*?' ~ (__end|regex_escape) }}"
+    replace: "{{ __beg ~ '\n' ~ __body ~ '\n' ~ __end }}"
+    backup: "{{ etc_hosts_backup | default(true) }}"
+    unsafe_writes: "{{ __in_container }}"
+  when: __has and __diff
+  become: true
+
+# Bloc absent → le créer (BEGIN/END + lignes)
+- lineinfile:
+    path: /etc/hosts
+    line: "{{ __beg }}"
+    state: present
+    insertafter: EOF
+    create: true
+    unsafe_writes: "{{ __in_container }}"
+    backup: "{{ etc_hosts_backup | default(true) }}"
+  when: not __has
+  become: true
+
+- lineinfile:
+    path: /etc/hosts
+    line: "{{ __end }}"
+    state: present
+    insertbefore: EOF
+    unsafe_writes: "{{ __in_container }}"
+  when: not __has
+  become: true
+
+- lineinfile:
+    path: /etc/hosts
+    line: "{{ item }}"
+    state: present
+    insertbefore: "^{{ __end|regex_escape }}$"
+    unsafe_writes: "{{ __in_container }}"
+  loop: "{{ __body.splitlines() }}"
+  when: not __has
   become: true

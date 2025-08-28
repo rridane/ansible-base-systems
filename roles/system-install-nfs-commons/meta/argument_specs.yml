@@ -1,29 +1,17 @@
 argument_specs:
   main:
-    short_description: "Install k9s tool"
+    short_description: "Installer ou supprimer le paquet NFS client (nfs-common)"
     description:
-      - "Installe K9s depuis les releases GitHub."
-      - "Par défaut, installe la dernière version stable."
+      - "Gère l'installation du paquet nfs-common (Debian/Ubuntu)."
+      - "Permet de l'installer ou de le désinstaller via l'option state."
     options:
-      k9s_version:
+      nfs_common_state:
         type: str
         required: false
-        default: ""
+        default: "present"
+        choices: ["present", "absent", "latest"]
         description:
-          - "Version spécifique de K9s à installer (ex: '0.32.4')."
-          - "Si vide, la dernière version sera automatiquement utilisée."
-      k9s_arch:
-        type: str
-        required: false
-        default: "amd64"
-        choices: ["amd64", "arm64"]
-        description:
-          - "Architecture de la machine cible."
-          - "Correspond au suffixe des binaires K9s sur GitHub."
-      k9s_bin_path:
-        type: str
-        required: false
-        default: "/usr/local/bin"
-        description:
-          - "Chemin de destination du binaire K9s."
-          - "Doit être présent dans le PATH pour être exécuté."
+          - "État du paquet nfs-common."
+          - "'present' installe le paquet (par défaut)."
+          - "'latest' met à jour vers la dernière version."
+          - "'absent' supprime le paquet."

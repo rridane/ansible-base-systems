@@ -2,7 +2,7 @@
 k9s_version: ""
 
 # Architecture → on peut détecter via ansible_architecture mais ici on force pour Linux x86_64
-k9s_arch: "Linux_x86_64"
+k9s_arch: "amd64"
 
 # Destination finale
 k9s_bin_path: "/usr/local/bin"
