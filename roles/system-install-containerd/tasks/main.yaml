@@ -31,23 +31,50 @@
   when: containerd_state == 'present'
   become: true
   block:
+    # Assure le dossier keyrings
     - name: "Ensure keyrings dir exists"
       ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
         mode: "0755"
 
-    - name: "Add Docker APT key (for containerd)"
-      ansible.builtin.apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        keyring: /etc/apt/keyrings/docker.gpg
+    # Paquets utiles pour télécharger et dearmer
+    - name: "Install deps to handle key (curl/gnupg/ca-certificates)"
+      ansible.builtin.apt:
+        name:
+          - curl
+          - gnupg
+          - ca-certificates
         state: present
+        update_cache: true
 
-    - name: "Add Docker APT repo"
+    # Récupération de la clé ASCII
+    - name: "Download Docker GPG key (ASCII armor)"
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    # Dearmor -> .gpg (évite apt-key)
+    - name: "Dearmor Docker key"
+      ansible.builtin.command:
+        cmd: "gpg --dearmor -o /etc/apt/keyrings/docker.gpg /etc/apt/keyrings/docker.asc"
+      args:
+        creates: /etc/apt/keyrings/docker.gpg
+
+    # Détecte arch et vendor pour composer la ligne du dépôt correctement
+    - name: "Set repo facts"
+      ansible.builtin.set_fact:
+        _repo_arch: "{{ 'arm64' if ansible_architecture in ['aarch64','arm64'] else 'amd64' }}"
+        _repo_vendor: "{{ 'debian' if ansible_facts.os_family == 'Debian' and ansible_facts.distribution == 'Debian' else 'ubuntu' }}"
+        _repo_codename: "{{ ansible_facts.distribution_release }}"
+
+    # Ajoute le dépôt Docker (utilisé pour containerd)
+    - name: "Add Docker APT repo (for containerd)"
       ansible.builtin.apt_repository:
-        repo: >
-          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
-          https://download.docker.com/linux/ubuntu focal stable
+        repo: >-
+          deb [arch={{ _repo_arch }} signed-by=/etc/apt/keyrings/docker.gpg]
+          https://download.docker.com/linux/{{ _repo_vendor }} {{ _repo_codename }} stable
         filename: docker
         state: present
         update_cache: true
@@ -76,30 +103,33 @@
         src: config.toml.j2
         dest: /etc/containerd/config.toml
         mode: "0644"
+      notify: restart containerd
 
-    # Définition des registries via hosts.toml dédiés
+    - name: "Ensure per-registry dir exists"
+      vars:
+        registry_dir: "{{ containerd_registry_config_path }}/{{ registry.host }}{{ (':' ~ registry.port) if (registry.port | default('')) else '' }}"
+      ansible.builtin.file:
+        path: "{{ registry_dir }}"
+        state: directory
+        mode: "0755"
+      loop: "{{ containerd_registries }}"
+      loop_control:
+        loop_var: registry
+
+    # Fichiers hosts.toml par registry (même registry_dir que ci-dessus)
     - name: "Create hosts.toml per registry"
+      vars:
+        registry_dir: "{{ containerd_registry_config_path }}/{{ registry.host }}{{ (':' ~ registry.port) if (registry.port | default('')) else '' }}"
       ansible.builtin.template:
         src: hosts.toml.j2
-        dest: "{{ containerd_registry_config_path }}/{{ registry.host }}:{{ registry.port }}/hosts.toml"
+        dest: "{{ registry_dir }}/hosts.toml"
         mode: "0644"
       loop: "{{ containerd_registries }}"
       loop_control:
         loop_var: registry
 
-    - name: "Configure systemd proxy (optional)"
-      when: containerd_proxy | length > 0
-      ansible.builtin.template:
-        src: http-proxy.conf.j2
-        dest: /etc/systemd/system/containerd.service.d/http-proxy.conf
-        mode: "0644"
-
-    - name: "Daemon-reload"
-      ansible.builtin.systemd:
-        daemon_reload: true
-
-    - name: "Enable & restart containerd"
+    - name: "Ensure containerd enabled & started"
       ansible.builtin.systemd:
         name: containerd
         enabled: true
-        state: restarted
+        state: started

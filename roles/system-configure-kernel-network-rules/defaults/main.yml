@@ -6,6 +6,10 @@ net_tuning_modules:
   - overlay
   - br_netfilter
 
+# defaults/main.yml
+net_tuning_load_now: true
+net_tuning_apply_sysctl_now: true
+
 # Règles sysctl à appliquer (clé => valeur)
 net_tuning_sysctls:
   net.bridge.bridge-nf-call-ip6tables: 1

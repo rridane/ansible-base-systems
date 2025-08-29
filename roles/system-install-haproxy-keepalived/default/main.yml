@@ -1,0 +1,43 @@
+---
+# ========================= HAProxy defaults =========================
+haproxy_username: haproxy
+haproxy_groupname: haproxy
+haproxy_default_mode: tcp
+
+# Stats frontend (Prometheus + UI)
+haproxy_frontend_stats_port: 8404
+haproxy_frontend_stats_username: admin
+haproxy_frontend_stats_password: admin
+
+# Dataplane API
+haproxy_dataplaneapi_user: dataplane
+
+# Backends for Kubernetes control-plane (masters)
+masters: []
+# Exemple :
+# masters:
+#   - hostname: master1
+#     ip: 192.168.1.11
+#     port: 6443
+#   - hostname: master2
+#     ip: 192.168.1.12
+#     port: 6443
+
+# Backends for ingress (traefik nodes)
+nodes: []
+# Exemple :
+# nodes:
+#   - hostname: node1
+#     ip: 192.168.1.21
+#     port: 9000
+#   - hostname: node2
+#     ip: 192.168.1.22
+#     port: 9000
+
+# Frontend ports
+api_server_frontend_port: 6443
+traefik_frontend_port: 9000
+
+# ========================= Keepalived defaults =========================
+keepalived_interface: eth0   # à override selon ta plateforme
+ha_vip: 192.168.1.100       # à override

@@ -1,0 +1,61 @@
+---
+argument_specs:
+  main:
+    short_description: >
+      Install and configure HAProxy + Keepalived for high availability (HA pair).
+    options:
+      haproxy_username:
+        type: str
+        default: haproxy
+        description: System user for haproxy process
+      haproxy_groupname:
+        type: str
+        default: haproxy
+        description: System group for haproxy process
+      haproxy_default_mode:
+        type: str
+        choices: [tcp, http]
+        default: tcp
+        description: Default mode for HAProxy
+      haproxy_frontend_stats_port:
+        type: int
+        default: 8404
+        description: Port used for HAProxy stats frontend
+      haproxy_frontend_stats_username:
+        type: str
+        default: admin
+        description: Username for HAProxy stats page
+      haproxy_frontend_stats_password:
+        type: str
+        default: admin
+        description: Password for HAProxy stats page
+      haproxy_dataplaneapi_user:
+        type: str
+        default: dataplane
+        description: User for HAProxy dataplane API
+      masters:
+        type: list
+        elements: dict
+        default: []
+        description: List of API-server backends (masters)
+      nodes:
+        type: list
+        elements: dict
+        default: []
+        description: List of Traefik backends (nodes)
+      api_server_frontend_port:
+        type: int
+        default: 6443
+        description: Port for API server frontend
+      traefik_frontend_port:
+        type: int
+        default: 9000
+        description: Port for Traefik frontend
+      keepalived_interface:
+        type: str
+        required: true
+        description: Network interface used by Keepalived
+      ha_vip:
+        type: str
+        required: true
+        description: Virtual IP managed by Keepalived

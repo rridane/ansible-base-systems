@@ -20,7 +20,6 @@ def _vars(host):
         "kube_cri_socket": v.get("kube_cri_socket") or "/var/run/containerd/containerd.sock",
     }
 
-
 def _is_debian_like(host):
     return host.system_info.distribution.lower() in ("debian", "ubuntu")
 
