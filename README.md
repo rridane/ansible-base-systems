@@ -51,19 +51,19 @@ Objectif : disposer de **briques modulaires, idempotentes et testées** avec Mol
 ```yaml
 - hosts: all
   roles:
-    - role: system-configure-proxy
+    - role: rridane.base_systems.system_configure_proxy
       vars:
         proxy_host: "http://proxy.local:3128"
         no_proxy: "localhost,127.0.0.1,.svc"
 
-    - role: system-install-containerd
+    - role: rridane.base_systems.system_install_containerd
 
-    - role: system-install-kube-packages
+    - role: rridane.base_systems.system_install_kube_packages
       vars:
         kube_state: present
         kube_version: "v1.30.3"
 
-    - role: system-k8s-cli-swissknife
+    - role: rridane.base_systems.system_k8s_cli_swissknife
       vars:
         tools:
           kubectl:
