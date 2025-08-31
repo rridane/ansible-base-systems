@@ -1,5 +1,5 @@
 galaxy_info:
-  author: Rida Ridane
+  author: rridane
   description: Gérer des unités systemd (création, suppression, drop-ins, environment files, activation/désactivation, démarrage/redémarrage).
   license: MIT
   min_ansible_version: "2.12"

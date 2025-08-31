@@ -1,4 +1,4 @@
-# Ansible Role: rridane.net_tuning
+# Ansible Role: rridane.base_systems.net_tuning
 
 Ce rôle applique une configuration réseau minimale pour **Kubernetes/containers** :
 - charge des **modules noyau** (ex. `overlay`, `br_netfilter`),
@@ -13,13 +13,13 @@ Mode **absent** ⇒ retire modules + sysctl et **supprime** les fichiers `.conf`
 ## 🚀 Installation
 
 ```bash
-ansible-galaxy install rridane.net_tuning
+ansible-galaxy install rridane.base_systems.net_tuning
 ```
 
 ou via **requirements.yml**:
 
 ```yaml
-- name: rridane.net_tuning
+- name: rridane.base_systems.net_tuning
   version: ">=1.0.0"
 ```
 

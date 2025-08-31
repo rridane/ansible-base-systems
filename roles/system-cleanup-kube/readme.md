@@ -1,4 +1,4 @@
-# Ansible Role: rridane.kube_cleanup
+# Ansible Role: rridane.base_systems.kube_cleanup
 
 Rôle **destructif** pour nettoyer un nœud Kubernetes :
 - `kubeadm reset --force` (avec socket CRI),

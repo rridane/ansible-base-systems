@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: "Rida Ridane"
+  author: rridane
   description: "Gère les paquets kube (kubect, kubadm, kubelet)"
   license: MIT
   min_ansible_version: "2.12"

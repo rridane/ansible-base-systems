@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: "Rida Ridane"
+  author: rridane
   description: "Gère un bloc ansible-managed dans /etc/hosts (présence/absence)."
   license: MIT
   min_ansible_version: "2.12"

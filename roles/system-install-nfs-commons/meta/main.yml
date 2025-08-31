@@ -1,7 +1,7 @@
 ---
 galaxy_info:
-  role_name: system_install_nfs_commons
-  author: Rida Ridane
+  role_name: nfs_commons
+  author: rridane
   description: Installe nfs commons
   license: MIT
   namespace: rridane

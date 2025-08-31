@@ -1,10 +1,10 @@
 ---
 galaxy_info:
-  role_name: system_install_k9s
-  author: Rida Ridane
-  description: Installe K9s depuis les releases GitHub (dernière version par défaut ou version spécifiée).
+  role_name: k8s_cli_swissknife
+  author: rridane
+  description:
+    Bundle d’outils **CLI Kubernetes** (`kubectl`, `krew` + plugins, `k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye`) pour **Debian/Ubuntu**.
   license: MIT
-
   namespace: rridane
   platforms:
     - name: Debian

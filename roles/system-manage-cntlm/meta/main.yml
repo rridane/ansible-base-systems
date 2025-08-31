@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  role_name: system_manage_cntlm
+  author: rridane
+  description: >
+    Builds, installs and configures CNTLM (NTLMv2 authentication proxy) to allow
+    Linux systems and services to connect through corporate NTLM proxies.
+  license: MIT
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+        - bullseye
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - cntlm
+    - proxy
+    - ntlm
+    - authentication
+    - linux
+    - network
+dependencies: []
