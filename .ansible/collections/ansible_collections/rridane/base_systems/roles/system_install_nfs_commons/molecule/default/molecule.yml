@@ -1,0 +1,35 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: podman
+
+platforms:
+  # Distribution test machines
+  - name: ubuntu-20
+    image: "docker.io/geerlingguy/docker-ubuntu2004-ansible"
+    pre_build_image: true
+  - name: ubuntu-22
+    image: "docker.io/geerlingguy/docker-ubuntu2204-ansible:latest"
+    pre_build_image: true
+  - name: debian-12
+    image: "docker.io/geerlingguy/docker-debian12-ansible:latest"
+    pre_build_image: true
+
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+  config_options:
+    defaults:
+      callbacks_enabled: profile_tasks, timer
+  env:
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+
+verifier:
+  name: testinfra
+
+scenario:
+  name: default

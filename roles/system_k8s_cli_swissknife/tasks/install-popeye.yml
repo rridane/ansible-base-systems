@@ -1,29 +1,31 @@
+---
 - name: Get popeye latest version
-  uri:
+  ansible.builtin.uri:
     url: "https://api.github.com/repos/derailed/popeye/releases/latest"
     return_content: yes
   register: popeye_latest
   when: tools.popeye.version == ""
 
 - name: Set popeye version
-  set_fact:
+  ansible.builtin.set_fact:
     popeye_version: "{{ popeye_latest.json.tag_name }}"
   when: tools.popeye.version == ""
 
 - name: Use specified popeye version
-  set_fact:
+  ansible.builtin.set_fact:
     popeye_version: "{{ tools.popeye.version }}"
   when: tools.popeye.version != ""
 
 - name: Download popeye
-  get_url:
+  ansible.builtin.get_url:
     url: "https://github.com/derailed/popeye/releases/download/{{ popeye_version }}/popeye_Linux_{{ tools.popeye.arch }}.tar.gz"
     dest: "/tmp/popeye.tar.gz"
   become: true
 
 - name: Install popeye
-  unarchive:
+  ansible.builtin.unarchive:
     src: "/tmp/popeye.tar.gz"
     dest: "{{ bin_path }}"
     remote_src: yes
   become: true
+

@@ -1,0 +1,29 @@
+---
+galaxy_info:
+  role_name: system_cleanup_kube
+  author: rridane
+  description: >
+    Rôle destructif pour nettoyer un nœud Kubernetes :
+      - `kubeadm reset --force` (avec socket CRI),
+      - purge des paquets (`kubeadm`, `kubelet`, `kubectl`) — optionnel,
+      - suppression CNI (conf + interfaces) — optionnel,
+      - nettoyage **Calico** (conf/binaires/état/iptables) — optionnel,
+      - confirmation explicite requise.
+
+  license: MIT
+  min_ansible_version: "2.14"
+
+  platforms:
+    - name: Debian
+      versions: [ bullseye, bookworm ]
+    - name: Ubuntu
+      versions: [ focal, jammy, noble ]
+
+  galaxy_tags:
+    - networking
+    - sysctl
+    - kernel
+    - kubernetes
+    - containers
+
+dependencies: [ ]

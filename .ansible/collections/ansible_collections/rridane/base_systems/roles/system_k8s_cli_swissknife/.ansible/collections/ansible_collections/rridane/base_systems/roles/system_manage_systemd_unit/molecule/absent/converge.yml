@@ -1,0 +1,8 @@
+- name: Converge
+  hosts: all
+  vars:
+    unit_name: "test-service.service"
+    unit_present: false
+    unit_scope: "system"
+  roles:
+    - role: system-add-systemd-unit

@@ -1,0 +1,88 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: podman
+
+platforms:
+  # Distribution test machines
+  - name: ubuntu-20
+    image: "docker.io/geerlingguy/docker-ubuntu2004-ansible"
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: ubuntu-22
+    image: "docker.io/geerlingguy/docker-ubuntu2204-ansible:latest"
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: debian-12
+    image: "docker.io/geerlingguy/docker-debian12-ansible:latest"
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  # Machine spéciale pour tester un cas alternatif
+  - name: ubuntu-22-version-32
+    image: "docker.io/geerlingguy/docker-ubuntu2204-ansible:latest"
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+  config_options:
+    defaults:
+      callbacks_enabled: profile_tasks, timer
+  inventory:
+    group_vars:
+      all:
+        cntlm_version: "0.94.0"
+        cntlm_source_url: ""          # si vide => construit depuis cntlm_version
+        cntlm_build_dir: "/usr/local/src/cntlm"
+        cntlm_bin_path: "/usr/local/sbin/cntlm"
+        cntlm_conf_path: "/etc/cntlm.conf"
+        cntlm_unit_path: "/etc/systemd/system/cntlm.service"
+
+        # Configuration CNTLM par défaut
+        cntlm_username: "svc-proxy"
+        cntlm_domain: "ACME"
+        cntlm_pass_ntlmv2: "AABBCCDDEEFF00112233445566778899"
+        cntlm_listen_port: 3128
+        cntlm_upstream_host: "proxy.acme.corp"
+        cntlm_upstream_port: 8080
+        cntlm_no_proxy: ["localhost","127.0.0.1",".svc",".cluster.local"]
+        cntlm_extra_options:
+          - "Auth NTLMv2"
+          - "Allow 10.*"
+        cntlm_restart_on_change: true
+        cntlm_state: present
+
+    host_vars:
+      ubuntu-22-version-32:
+        cntlm_state: absent
+  env:
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+
+verifier:
+  name: testinfra
+  directory: ./tests
+  options:
+    verbose: true
+
+scenario:
+  name: default

@@ -1,28 +1,29 @@
+---
 - name: Get helm latest version
-  uri:
+  ansible.builtin.uri:
     url: "https://api.github.com/repos/helm/helm/releases/latest"
     return_content: yes
   register: helm_latest
   when: tools.helm.version == ""
 
 - name: Set helm version
-  set_fact:
+  ansible.builtin.set_fact:
     helm_version: "{{ helm_latest.json.tag_name | regex_replace('^v', '') }}"
   when: tools.helm.version == ""
 
 - name: Use specified helm version
-  set_fact:
+  ansible.builtin.set_fact:
     helm_version: "{{ tools.helm.version }}"
   when: tools.helm.version != ""
 
 - name: Download helm
-  get_url:
+  ansible.builtin.get_url:
     url: "https://get.helm.sh/helm-v{{ helm_version }}-linux-{{ tools.helm.arch }}.tar.gz"
     dest: "/tmp/helm.tar.gz"
   become: true
 
 - name: Install helm
-  unarchive:
+  ansible.builtin.unarchive:
     src: "/tmp/helm.tar.gz"
     dest: "/tmp"
     remote_src: yes
@@ -30,7 +31,7 @@
   become: true
 
 - name: Move helm binary
-  copy:
+  ansible.builtin.copy:
     src: "/tmp/helm"
     dest: "{{ bin_path }}/helm"
     mode: "0755"

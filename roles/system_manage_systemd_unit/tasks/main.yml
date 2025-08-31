@@ -1,6 +1,7 @@
+---
 # Pré-asserts (exactement un provider)
 - name: Compute selected content providers
-  set_fact:
+  ansible.builtin.set_fact:
     _providers: >-
       {{
         [
@@ -11,7 +12,7 @@
       }}
 
 - name: Assert exactly one provider is set
-  assert:
+  ansible.builtin.assert:
     that:
       - _providers | length == 1
     fail_msg: >-
@@ -19,7 +20,7 @@
       Got: {{ _providers | default([]) }}
 
 - name: Compute scope flag and user home
-  set_fact:
+  ansible.builtin.set_fact:
     _is_system_scope: "{{ (unit_scope | default('system')) == 'system' }}"
     _user_home_dir: >-
       {{
@@ -29,7 +30,7 @@
       }}
 
 - name: Compute unit base dir
-  set_fact:
+  ansible.builtin.set_fact:
     _unit_dir: >-
       {{
         '/etc/systemd/system'
@@ -38,11 +39,11 @@
       }}
 
 - name: Compute drop-in dir
-  set_fact:
+  ansible.builtin.set_fact:
     _dropin_dir: "{{ _unit_dir ~ '/' ~ unit_name ~ '.d' }}"
 
 - name: Compute file ownership
-  set_fact:
+  ansible.builtin.set_fact:
     _owner: "{{ 'root' if _is_system_scope else (ansible_user_id | default(ansible_user) | default('root')) }}"
     _group: "{{ 'root' if _is_system_scope else (ansible_user_gid | default(ansible_user_id) | default('root')) }}"
 

@@ -1,0 +1,32 @@
+# Etat global
+unit_state: "started"      # started | stopped | restarted | reloaded | null
+unit_enabled: true         # true | false
+unit_masked: false         # true | false
+unit_present: true         # true => créer/maintenir l'unité ; false => supprimer
+
+# Cible (system vs user)
+unit_scope: "system"       # system | user
+
+# Nom complet de l'unité (obligatoire, ex: "cntlm.service")
+unit_name: ""
+
+# Source du fichier d'unité :
+# 1) contenu inline (le plus portable)
+unit_content: ""           # si non vide, prioritaire
+# 2) template Jinja2 du rôle appelant (ex: "templates/my.service.j2")
+unit_template_src: ""      # chemin relatif au rôle appelant via `template:` (lookup role path)
+# 3) fichier déjà présent sur le contrôleur (copié tel quel)
+unit_src_path: ""          # chemin absolu sur le contrôleur
+
+# Drop-ins (override.conf etc.)
+unit_dropins: []           # liste de { name: "override.conf", content: "<ini>" }
+
+# Fichier d'environnement Optionnel
+unit_envfile_path: ""      # ex: /etc/default/myservice
+unit_envfile_content: ""   # contenu du .env (KEY=VALUE, lignes)
+
+# Redémarrage sur changement
+unit_restart_on_change: true
+
+# Validation (facultatif mais recommandé si présent sur la cible)
+unit_validate_with_systemd_analyze: true

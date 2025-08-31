@@ -29,7 +29,7 @@ provisioner:
       all:
         etc_hosts:
           - ip: "10.0.0.11"
-            names: [ "k8s-master-1", "k8s-master-1.localdomain" ]
+            names: [ "k8s-master-1","k8s-master-1.localdomain" ]
             comment: "control-plane"
           - ip: "10.0.0.12"
             names: [ "k8s-master-2" ]

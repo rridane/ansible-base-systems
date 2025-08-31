@@ -1,0 +1,26 @@
+# Etat
+cntlm_state: present   # present | absent
+
+# Source (CHOOSE ONE)
+cntlm_version: "0.94.0"   # sinon "", si tu donnes cntlm_source_url
+cntlm_source_url: ""      # ex: https://github.com/versat/cntlm/archive/refs/tags/0.94.0.tar.gz
+cntlm_source_checksum: "" # ex: sha256:xxxx
+
+# Build/install paths
+cntlm_build_dir: /usr/local/src/cntlm
+cntlm_bin_path: /usr/local/sbin/cntlm
+cntlm_conf_path: /etc/cntlm.conf
+cntlm_unit_path: /etc/systemd/system/cntlm.service
+
+# Conf CNTLM
+cntlm_username: ""
+cntlm_domain: ""
+cntlm_password: ""        # préfère cntlm_pass_ntlmv2
+cntlm_pass_ntlmv2: ""
+cntlm_listen_host: ""     # "" => "Listen <port>", sinon "host:port"
+cntlm_listen_port: 3128
+cntlm_upstream_host: 127.0.0.1
+cntlm_upstream_port: 3128
+cntlm_no_proxy: []
+cntlm_extra_options: []
+cntlm_restart_on_change: true

@@ -1,3 +1,4 @@
+---
 # ------------------------------- ABSENT ---------------------------------------
 - name: "kubectl | Remove (absent)"
   become: true
@@ -107,10 +108,3 @@
         state: present
         update_cache: false
         allow_downgrade: true
-#
-#    - name: Install kubectl (pinned to target version)
-#      ansible.builtin.apt:
-#        name: "kubectl={{ _kubectl_version }}"
-#        state: present
-#        update_cache: false
-#        allow_downgrade: true

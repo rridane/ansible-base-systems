@@ -1,0 +1,71 @@
+---
+argument_specs:
+  main:
+    short_description: "Install and configure containerd (present/absent), registries and optional proxy"
+    options:
+      containerd_state:
+        type: str
+        choices: [present, absent]
+        default: present
+        description:
+          - Desired state of containerd.
+          - C(present) installs and configures containerd; C(absent) removes the package and configuration.
+
+      containerd_version:
+        type: str
+        default: ""
+        description:
+          - Version string to install via APT for package C(containerd.io).
+          - Leave empty to install the latest available version from the configured Docker repo.
+          - Must match exact APT version when specified (e.g. C(1.7.22-1)).
+
+      containerd_root:
+        type: str
+        default: "/mnt/data/containerd"
+        description:
+          - Root directory for containerd data (mapped in the generated C(config.toml)).
+
+      containerd_registry_config_path:
+        type: str
+        default: "/etc/containerd/certs.d"
+        description:
+          - Base path where per-registry C(hosts.toml) files are written.
+
+      containerd_registries:
+        type: list
+        elements: dict
+        default: []
+        description:
+          - List of registry endpoints to configure (one C(hosts.toml) per registry directory).
+          - The directory name is computed as C(<host>) or C(<host>:<port>) when C(port) is defined.
+        options:
+          host:
+            type: str
+            required: true
+            description:
+              - Registry hostname or IP (e.g. C(registry.example.com) or C(10.0.0.10)).
+          port:
+            type: int
+            required: false
+            description:
+              - Registry TCP port. If omitted, directory name is just the host.
+          insecure:
+            type: bool
+            required: false
+            default: false
+            description:
+              - Whether to treat the registry as insecure (typically disables TLS verification in C(hosts.toml)).
+          endpoints:
+            type: list
+            elements: str
+            required: false
+            default: []
+            description:
+              - Explicit list of endpoint URLs (e.g. C(http://10.0.0.10:5000)). When empty, containerd defaults apply.
+
+      containerd_proxy:
+        type: str
+        default: ""
+        description:
+          - Optional proxy URL for containerd service drop-in (e.g. C(http://proxy.local:3128)).
+          - Leave empty to disable proxy configuration.

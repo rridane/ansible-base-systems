@@ -1,3 +1,4 @@
+---
 # Etat global
 unit_state: "started"      # started | stopped | restarted | reloaded | null
 unit_enabled: true         # true | false
@@ -30,3 +31,4 @@ unit_restart_on_change: true
 
 # Validation (facultatif mais recommandé si présent sur la cible)
 unit_validate_with_systemd_analyze: true
+

@@ -1,0 +1,41 @@
+# Confirme que tu veux nettoyer ce nœud Kubernetes (destructif)
+kube_cleanup_enabled: true
+
+# Socket CRI (utilisé par kubeadm reset)
+kube_cri_socket: "/var/run/containerd/containerd.sock"
+
+# Demande de confirmation interactive
+kube_ask_confirmation: true
+
+# Pour CI/non-interactif, pose la confirmation ici
+kube_cleanup_ack: ""           # ex: "yes"
+kube_cleanup_ack_expected: "yes"
+
+# Nettoyages à activer
+kube_cleanup_packages: true    # apt purge kubeadm/kubelet/kubectl
+kube_cleanup_cni: true         # supprime /etc/cni/net.d + interfaces
+kube_cleanup_calico: true      # nettoyage spécifique Calico (best effort)
+
+# Interfaces CNI connues (génériques + Calico)
+kube_cni_interfaces_down:
+  - cni0
+  - flannel.1
+  - tunl0           # Calico IPIP
+  - vxlan.calico    # Calico VXLAN
+
+# Fichiers CNI Calico (best effort)
+kube_calico_cni_conf_files:
+  - /etc/cni/net.d/10-calico.conflist
+  - /etc/cni/net.d/calico.conflist
+  - /etc/cni/net.d/calico-kubeconfig
+
+# Binaries CNI Calico (best effort)
+kube_calico_cni_bins:
+  - /opt/cni/bin/calico
+  - /opt/cni/bin/calico-ipam
+
+# Répertoires d'état
+kube_cleanup_state_dirs:
+  - /var/lib/cni/networks
+  - /var/lib/calico
+

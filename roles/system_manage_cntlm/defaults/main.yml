@@ -1,3 +1,4 @@
+---
 # Etat
 cntlm_state: present   # present | absent
 

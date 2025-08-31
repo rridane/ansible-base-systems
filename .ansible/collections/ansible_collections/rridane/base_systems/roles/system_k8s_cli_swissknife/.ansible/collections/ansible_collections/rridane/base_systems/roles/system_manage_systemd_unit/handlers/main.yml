@@ -1,0 +1,13 @@
+---
+- name: daemon reload
+  systemd:
+    daemon_reload: true
+    scope: "{{ unit_scope }}"
+  become: "{{ unit_scope == 'system' }}"
+
+- name: restart unit
+  systemd:
+    name: "{{ unit_name }}"
+    state: restarted
+    scope: "{{ unit_scope }}"
+  become: "{{ unit_scope == 'system' }}"

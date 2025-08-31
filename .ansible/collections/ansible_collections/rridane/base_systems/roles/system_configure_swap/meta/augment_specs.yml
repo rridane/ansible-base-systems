@@ -1,0 +1,13 @@
+---
+argument_specs:
+  main:
+    short_description: "Enable or disable system swap"
+    options:
+      swap_enabled:
+        type: bool
+        required: false
+        default: false
+        description:
+          - Control whether swap should be enabled or disabled.
+          - If C(true), uncomment swap entries in /etc/fstab and run `swapon -a`.
+          - If C(false), comment swap entries in /etc/fstab and run `swapoff -a`.

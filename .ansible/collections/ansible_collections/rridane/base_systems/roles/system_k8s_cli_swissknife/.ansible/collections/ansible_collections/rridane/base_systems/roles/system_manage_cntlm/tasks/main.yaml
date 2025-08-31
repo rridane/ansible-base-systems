@@ -1,0 +1,144 @@
+# Handlers attendus :
+# - daemon reload
+# - restart cntlm
+
+# ========= VALIDATION =========
+- name: Validate CNTLM auth inputs (username + exactly one of password/hash)
+  when: cntlm_state == 'present'
+  vars:
+    _has_pwd: "{{ (cntlm_password     | default('')) | length > 0 }}"
+    _has_hash: "{{ (cntlm_pass_ntlmv2 | default('')) | length > 0 }}"
+  ansible.builtin.assert:
+    that:
+      - (cntlm_username | default('')) | length > 0
+      - _has_pwd or _has_hash
+      - not (_has_pwd and _has_hash)
+    fail_msg: >
+      Fournis exactement l'un des deux: cntlm_password OU cntlm_pass_ntlmv2 (et un cntlm_username).
+
+# ========= PRESENT =========
+- block:
+    - name: Preflight | source tarball URL is required (or a version to build the default URL)
+      ansible.builtin.assert:
+        that:
+          - (cntlm_source_url | length) > 0 or (cntlm_version | length) > 0
+        fail_msg: "Tu dois fournir cntlm_source_url OU cntlm_version (pour construire l'URL GitHub)."
+
+    - name: Build default source URL from version (when cntlm_source_url not given)
+      ansible.builtin.set_fact:
+        cntlm_source_url: "https://github.com/versat/cntlm/archive/refs/tags/{{ cntlm_version }}.tar.gz"
+      when: cntlm_source_url | length == 0
+
+    - name: Check if binary already present (skip build when present)
+      ansible.builtin.stat:
+        path: "{{ cntlm_bin_path }}"
+      register: cntlm_bin_present
+
+    - name: Install build toolchain (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - build-essential
+          - libssl-dev
+          - ca-certificates
+          - pkg-config
+        state: present
+        update_cache: true
+      become: true
+
+    - name: Prepare build directory
+      ansible.builtin.file:
+        path: "{{ cntlm_build_dir }}"
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Download source tarball
+      ansible.builtin.get_url:
+        url: "{{ cntlm_source_url }}"
+        dest: "{{ cntlm_build_dir }}/cntlm.tar.gz"
+        mode: "0644"
+        checksum: "{{ cntlm_source_checksum | default(omit) }}"
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Unarchive source
+      ansible.builtin.unarchive:
+        src: "{{ cntlm_build_dir }}/cntlm.tar.gz"
+        dest: "{{ cntlm_build_dir }}"
+        remote_src: true
+      when: not cntlm_bin_present.stat.exists
+      register: _untar
+      become: true
+
+    - name: Locate extracted source directory
+      ansible.builtin.find:
+        paths: "{{ cntlm_build_dir }}"
+        file_type: directory
+        patterns: "cntlm*"
+        depth: 1
+      when: not cntlm_bin_present.stat.exists
+      register: _src_dirs
+      become: true
+
+    - name: Ensure source dir was found
+      when: not cntlm_bin_present.stat.exists
+      ansible.builtin.assert:
+        that:
+          - _src_dirs is defined
+          - _src_dirs.files | length > 0
+        fail_msg: "Impossible de localiser le répertoire des sources de CNTLM dans {{ cntlm_build_dir }}"
+
+    - name: Configure
+      ansible.builtin.command: ./configure
+      args:
+        chdir: "{{ (_src_dirs.files | sort(attribute='path') | last).path }}"
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Make
+      ansible.builtin.command: make -j {{ ansible_processor_vcpus | default(2) }}
+      args:
+        chdir: "{{ (_src_dirs.files | sort(attribute='path') | last).path }}"
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Make install
+      ansible.builtin.command: make install
+      args:
+        chdir: "{{ (_src_dirs.files | sort(attribute='path') | last).path }}"
+      when: not cntlm_bin_present.stat.exists
+      become: true
+
+    - name: Render cntlm.conf
+      ansible.builtin.template:
+        src: cntlm.conf.j2
+        dest: "{{ cntlm_conf_path }}"
+        mode: "0644"
+        owner: root
+        group: root
+      diff: false
+      become: true
+      notify: "{{ ['restart cntlm'] if cntlm_restart_on_change else [] }}"
+
+  when: cntlm_state == 'present'
+
+# ========= ABSENT =========
+- block:
+    - name: Remove configuration
+      ansible.builtin.file:
+        path: "{{ cntlm_conf_path }}"
+        state: absent
+      become: true
+
+    - name: Remove binary
+      ansible.builtin.file:
+        path: "{{ cntlm_bin_path }}"
+        state: absent
+      become: true
+
+    - name: Remove build directory
+      ansible.builtin.file:
+        path: "{{ cntlm_build_dir }}"
+        state: absent
+      become: true
+  when: cntlm_state == 'absent'

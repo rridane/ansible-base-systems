@@ -1,3 +1,4 @@
+---
 tools:
   kubectl:
     enabled: true

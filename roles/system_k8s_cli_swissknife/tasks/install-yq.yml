@@ -1,22 +1,23 @@
+---
 - name: Get yq latest version
-  uri:
+  ansible.builtin.uri:
     url: "https://api.github.com/repos/mikefarah/yq/releases/latest"
     return_content: yes
   register: yq_latest
   when: tools.yq.version == ""
 
 - name: Set yq version
-  set_fact:
+  ansible.builtin.set_fact:
     yq_version: "{{ yq_latest.json.tag_name }}"
   when: tools.yq.version == ""
 
 - name: Use specified yq version
-  set_fact:
+  ansible.builtin.set_fact:
     yq_version: "{{ tools.yq.version }}"
   when: tools.yq.version != ""
 
 - name: Download yq
-  get_url:
+  ansible.builtin.get_url:
     url: "https://github.com/mikefarah/yq/releases/download/{{ yq_version }}/yq_linux_{{ tools.yq.arch }}"
     dest: "{{ bin_path }}/yq"
     mode: "0755"

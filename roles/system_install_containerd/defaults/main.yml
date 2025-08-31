@@ -1,3 +1,4 @@
+---
 # Installer / retirer containerd
 containerd_state: present
 

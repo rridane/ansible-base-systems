@@ -1,0 +1,83 @@
+- name: "Deps | Ensure kmod/procps are installed"
+  become: true
+  package:
+    name: "{{ _net_tuning_pkgs }}"
+    state: present
+  vars:
+    _net_tuning_pkgs: >-
+      {{
+        (ansible_os_family == 'Debian') | ternary(['kmod','procps'],
+        (ansible_os_family == 'RedHat') | ternary(['kmod','procps-ng'],
+        (ansible_os_family == 'Alpine') | ternary(['kmod','procps'],
+        ['kmod','procps'] )))
+      }}
+  when: not (ansible_virtualization_type in ['docker','podman','lxc','container'])
+
+# tasks/main.yml (tout en haut)
+- name: "Facts | Auto-disable live actions in containers"
+  set_fact:
+    net_tuning_load_now: false
+    net_tuning_apply_sysctl_now: false
+  when: ansible_virtualization_type in ['docker','podman','lxc','container']
+
+# PRESENT
+- name: "Network tuning | Apply (present)"
+  when: net_tuning_state == 'present'
+  become: true
+  block:
+    - name: "Modules | Load required modules now"
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ net_tuning_modules | unique }}"
+      when: net_tuning_load_now
+
+    - name: "Modules | Ensure modules load at boot"
+      ansible.builtin.template:
+        src: modules.conf.j2
+        dest: "{{ net_tuning_modules_conf_path }}"
+        mode: "0644"
+
+    - name: "Sysctl | Apply rules"
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: present
+        sysctl_set: true
+        reload: true
+        sysctl_file: "{{ net_tuning_sysctl_conf_path }}"
+      loop: "{{ net_tuning_sysctls | dict2items }}"
+      when: net_tuning_apply_sysctl_now
+      # Certains sysctl bridge nécessitent br_netfilter déjà chargé :
+      # On applique après le modprobe ci-dessus, donc pas d'ignore_errors ici.
+
+# ABSENT
+- name: "Network tuning | Remove (absent)"
+  when: net_tuning_state == 'absent'
+  become: true
+  block:
+    - name: "Sysctl | Remove rules"
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        state: absent
+        reload: true
+        sysctl_file: "{{ net_tuning_sysctl_conf_path }}"
+      loop: "{{ net_tuning_sysctls | dict2items }}"
+      failed_when: false  # au cas où la règle n'existe pas déjà
+
+    - name: "Sysctl | Remove conf file"
+      ansible.builtin.file:
+        path: "{{ net_tuning_sysctl_conf_path }}"
+        state: absent
+
+    - name: "Modules | Try to unload now (best effort)"
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ net_tuning_modules | reverse | list }}"
+      failed_when: false   # ne pas échouer si un module est encore utilisé
+
+    - name: "Modules | Remove boot conf"
+      ansible.builtin.file:
+        path: "{{ net_tuning_modules_conf_path }}"
+        state: absent

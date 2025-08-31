@@ -1,3 +1,4 @@
+---
 # present => applique modules + sysctl ; absent => retire modules + sysctl et supprime les fichiers .conf
 net_tuning_state: present
 
@@ -19,3 +20,4 @@ net_tuning_sysctls:
 # Fichiers générés
 net_tuning_modules_conf_path: "/etc/modules-load.d/net-tuning.conf"
 net_tuning_sysctl_conf_path:  "/etc/sysctl.d/90-net-tuning.conf"
+

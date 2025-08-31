@@ -1,5 +1,6 @@
+---
 - name: Install jq via package manager
-  package:
+  ansible.builtin.package:
     name: jq
     state: present
   become: true

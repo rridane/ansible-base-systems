@@ -1,6 +1,6 @@
 ---
 - name: Compute effective proxy values
-  set_fact:
+  ansible.builtin.set_fact:
     _http_proxy: "{{ http_proxy }}"
     _https_proxy: "{{ (https_proxy | default('')) | ternary(https_proxy, http_proxy) }}"
     _no_proxy: >-
@@ -12,7 +12,7 @@
 
 # 1) APT
 - name: Ensure APT proxy (present)
-  template:
+  ansible.builtin.template:
     src: apt_proxy.conf.j2
     dest: "{{ apt_proxy_file }}"
     mode: "0644"
@@ -20,7 +20,7 @@
   become: true
 
 - name: Ensure APT proxy (absent)
-  file:
+  ansible.builtin.file:
     path: "{{ apt_proxy_file }}"
     state: absent
   when: proxy_state == 'absent'
@@ -28,7 +28,7 @@
 
 # 2) /etc/environment via bloc
 - name: Ensure /etc/environment proxy block (present)
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: "{{ environment_file }}"
     marker: "# ANSIBLE-MANAGED {{ environment_block_name }} {mark}"
     create: true
@@ -38,7 +38,7 @@
   become: true
 
 - name: Ensure /etc/environment proxy block (absent)
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: "{{ environment_file }}"
     marker: "# ANSIBLE-MANAGED {{ environment_block_name }} {mark}"
     state: absent
@@ -47,7 +47,7 @@
 
 # 3) systemd DefaultEnvironment (persistant)
 - name: Ensure systemd drop-in dir exists
-  file:
+  ansible.builtin.file:
     path: "{{ systemd_dropin_dir }}"
     state: directory
     mode: "0755"
@@ -55,7 +55,7 @@
   become: true
 
 - name: Persist proxies in systemd DefaultEnvironment (present)
-  template:
+  ansible.builtin.template:
     src: systemd_default_env.conf.j2
     dest: "{{ systemd_dropin_dir }}/{{ systemd_dropin_file }}"
     mode: "0644"
@@ -64,7 +64,7 @@
   become: true
 
 - name: Remove systemd DefaultEnvironment drop-in (absent)
-  file:
+  ansible.builtin.file:
     path: "{{ systemd_dropin_dir }}/{{ systemd_dropin_file }}"
     state: absent
   when: proxy_state == 'absent'

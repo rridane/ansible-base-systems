@@ -77,4 +77,3 @@ verifier:
   name: testinfra
   options:
     verbose: true
-    s: true   # pour voir les scénarios

@@ -1,28 +1,29 @@
+---
 - name: Get kubent latest version
-  uri:
+  ansible.builtin.uri:
     url: "https://api.github.com/repos/doitintl/kube-no-trouble/releases/latest"
     return_content: yes
   register: kubent_latest
   when: tools.kubent.version == ""
 
 - name: Set kubent version
-  set_fact:
+  ansible.builtin.set_fact:
     kubent_version: "{{ kubent_latest.json.tag_name }}"
   when: tools.kubent.version == ""
 
 - name: Use specified kubent version
-  set_fact:
+  ansible.builtin.set_fact:
     kubent_version: "{{ tools.kubent.version }}"
   when: tools.kubent.version != ""
 
 - name: Download kubent
-  get_url:
+  ansible.builtin.get_url:
     url: "https://github.com/doitintl/kube-no-trouble/releases/download/{{ kubent_version }}/kubent-{{ kubent_version }}-linux-{{ tools.kubent.arch }}.tar.gz"
     dest: "/tmp/kubent.tar.gz"
   become: true
 
 - name: Install kubent
-  unarchive:
+  ansible.builtin.unarchive:
     src: "/tmp/kubent.tar.gz"
     dest: "{{ bin_path }}"
     remote_src: yes

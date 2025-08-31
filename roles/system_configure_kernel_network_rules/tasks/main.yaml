@@ -1,6 +1,7 @@
+---
 - name: "Deps | Ensure kmod/procps are installed"
   become: true
-  package:
+  ansible.builtin.package:
     name: "{{ _net_tuning_pkgs }}"
     state: present
   vars:
@@ -15,7 +16,7 @@
 
 # tasks/main.yml (tout en haut)
 - name: "Facts | Auto-disable live actions in containers"
-  set_fact:
+  ansible.builtin.set_fact:
     net_tuning_load_now: false
     net_tuning_apply_sysctl_now: false
   when: ansible_virtualization_type in ['docker','podman','lxc','container']

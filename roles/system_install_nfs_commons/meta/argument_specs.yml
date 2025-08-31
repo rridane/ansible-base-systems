@@ -1,3 +1,4 @@
+---
 argument_specs:
   main:
     short_description: "Installer ou supprimer le paquet NFS client (nfs-common)"
@@ -15,3 +16,4 @@ argument_specs:
           - "'present' installe le paquet (par défaut)."
           - "'latest' met à jour vers la dernière version."
           - "'absent' supprime le paquet."
+

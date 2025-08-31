@@ -1,0 +1,20 @@
+---
+# État désiré : present | absent
+proxy_state: present
+
+http_proxy: ""                 # ex: "http://proxy.proxy"
+https_proxy: ""                # par défaut reprendra http_proxy si vide
+no_proxy: ""                   # si non vide, prime sur no_proxy_list
+no_proxy_list:
+  - "127.0.0.1"
+  - "localhost"
+  - ".svc"
+  - ".cluster.local"
+no_proxy_extra: []             # à fusionner au besoin
+
+# Emplacements gérés
+apt_proxy_file: /etc/apt/apt.conf.d/99-proxy.conf
+environment_file: /etc/environment
+environment_block_name: ansible_managed_proxy
+systemd_dropin_dir: /etc/systemd/system.conf.d
+systemd_dropin_file: 10-proxy.conf

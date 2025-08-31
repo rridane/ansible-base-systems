@@ -1,0 +1,62 @@
+---
+# Identique à default/molecule.yml mais avec la variable d'état modifiée
+dependency:
+  name: galaxy
+
+driver:
+  name: podman
+
+platforms:
+  - name: ubuntu-20
+    image: "docker.io/geerlingguy/docker-ubuntu2004-ansible"
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: ubuntu-22
+    image: "docker.io/geerlingguy/docker-ubuntu2204-ansible:latest"
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+  - name: debian-12
+    image: "docker.io/geerlingguy/docker-debian12-ansible:latest"
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callbacks_enabled: profile_tasks, timer
+  inventory:
+    group_vars:
+      all:
+        net_tuning_state: absent
+        net_tuning_modules:
+          - overlay
+          - br_netfilter
+        net_tuning_sysctls:
+          net.bridge.bridge-nf-call-ip6tables: 1
+          net.bridge.bridge-nf-call-iptables: 1
+          net.ipv4.ip_forward: 1
+        net_tuning_modules_conf_path: "/etc/modules-load.d/net-tuning.conf"
+        net_tuning_sysctl_conf_path: "/etc/sysctl.d/90-net-tuning.conf"
+  env:
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+
+verifier:
+  name: testinfra
+  directory: tests
+  options:
+    verbose: true
+
+scenario:
+  name: absent

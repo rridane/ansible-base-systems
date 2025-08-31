@@ -1,0 +1,44 @@
+{
+ "collection_info": {
+  "namespace": "rridane",
+  "name": "base_systems",
+  "version": "0.1.0",
+  "authors": [
+   "rridane <rridane@rr-dev.com>"
+  ],
+  "readme": "README.md",
+  "tags": [
+   "ansible",
+   "linux",
+   "kubernetes",
+   "containerd",
+   "haproxy",
+   "keepalived",
+   "sysctl",
+   "proxy",
+   "krew",
+   "k9s",
+   "helm",
+   "debian",
+   "ubuntu"
+  ],
+  "description": "System hardening & Kubernetes toolkit for Debian/Ubuntu: proxy, swap, sysctl, containerd, HAProxy/Keepalived, kube packages, and admin CLIs (kubectl, helm, k9s, krew).\n",
+  "license": [
+   "MIT"
+  ],
+  "license_file": null,
+  "dependencies": {},
+  "repository": "https://github.com/rridane/ansible-base-systems",
+  "documentation": "https://github.com/rridane/ansible-base-systems",
+  "homepage": "https://github.com/rridane/ansible-base-systems",
+  "issues": "https://github.com/rridane/ansible-base-systems"
+ },
+ "file_manifest_file": {
+  "name": "FILES.json",
+  "ftype": "file",
+  "chksum_type": "sha256",
+  "chksum_sha256": "5701f337fe0edd55a949ad53ac897d315c953831ddbe0f079302b07d30b8b4aa",
+  "format": 1
+ },
+ "format": 1
+}

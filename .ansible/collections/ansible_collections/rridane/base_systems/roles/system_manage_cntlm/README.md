@@ -1,0 +1,68 @@
+# Ansible Role: rridane.cntlm
+
+Ce rôle installe et configure **CNTLM** (proxy NTLM/NTLMv2) depuis les sources, crée le service **systemd** et gère sa configuration.  
+Supporte les états **present/absent**.
+
+---
+
+## 🚀 Installation
+
+`requirements.yml` :
+
+```yaml
+- name: rridane.cntlm
+  version: ">=1.0.0"
+```
+
+```yaml
+ansible-galaxy install -r requirements.yml
+```
+
+| Variable               | Par défaut                     | Description                                                                 |
+|------------------------|---------------------------------|-----------------------------------------------------------------------------|
+| cntlm_state            | present                         | `present` pour installer/configurer, `absent` pour supprimer                 |
+| cntlm_version          | "0.94.0"                        | Version CNTLM (si `cntlm_source_url` est vide, construit l’URL GitHub)       |
+| cntlm_source_url       | ""                              | URL du tarball source (prioritaire si renseignée)                            |
+| cntlm_source_checksum  | ""                              | Checksum (ex: sha256:…) pour sécuriser le téléchargement                     |
+| cntlm_build_dir        | /usr/local/src/cntlm            | Dossier de compilation                                                       |
+| cntlm_bin_path         | /usr/local/sbin/cntlm           | Chemin d’installation du binaire                                             |
+| cntlm_conf_path        | /etc/cntlm.conf                 | Chemin du fichier de configuration                                           |
+| cntlm_unit_path        | /etc/systemd/system/cntlm.service | Chemin du service systemd                                                  |
+| cntlm_username         | ""                              | Nom d’utilisateur NTLM                                                       |
+| cntlm_domain           | ""                              | Domaine                                                                      |
+| cntlm_password         | ""                              | Mot de passe (**évitez**, préférez `cntlm_pass_ntlmv2` + Ansible Vault)      |
+| cntlm_pass_ntlmv2      | ""                              | Hash NTLMv2 (**recommandé**)                                                 |
+| cntlm_listen_host      | ""                              | Hôte d’écoute. Si vide, CNTLM utilisera `Listen <port>`                      |
+| cntlm_listen_port      | 3128                            | Port d’écoute                                                                |
+| cntlm_upstream_host    | 127.0.0.1                       | Hôte du proxy upstream (corporate)                                           |
+| cntlm_upstream_port    | 3128                            | Port upstream                                                                |
+| cntlm_no_proxy         | []                              | Liste de domaines/IP à exclure (convertie en lignes `NoProxy …`)             |
+| cntlm_extra_options    | []                              | Lignes additionnelles brutes (ex: `NTLMv2 on`)                               |
+| cntlm_restart_on_change | true                           | Redémarrer le service si la conf/unité change                                |
+
+⚠ Fournissez exactement un des deux : **cntlm_password** ou **cntlm_pass_ntlmv2** (et **cntlm_username** requis).
+
+```yaml
+- hosts: all
+  become: true
+  roles:
+    - role: rridane.cntlm
+      vars:
+        cntlm_version: "0.94.0"
+        cntlm_username: "john.doe"
+        cntlm_domain: "ACME"
+        # Préférez le hash NTLMv2 avec Ansible Vault :
+        cntlm_pass_ntlmv2: "ABCD1234...EF"
+        cntlm_upstream_host: "proxy.corp.local"
+        cntlm_upstream_port: 8080
+        cntlm_listen_port: 3128
+        cntlm_no_proxy:
+          - "localhost"
+          - "127.0.0.1"
+          - ".interne"
+```
+
+## 🔗 Voir aussi
+
+- [rridane.proxy](https://galaxy.ansible.com/rridane/proxy) — configure les proxys système (APT, /etc/environment, systemd).
+- [rridane.systemd_unit](https://galaxy.ansible.com/rridane/systemd_unit) — gère les unités systemd (création, suppression, drop-ins).  

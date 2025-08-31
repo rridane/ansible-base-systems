@@ -1,0 +1,44 @@
+---
+- name: Prepare network for keepalived tests (VRRP over veth)
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure iproute2 present
+      ansible.builtin.apt:
+        name: iproute2
+        state: present
+        update_cache: true
+
+    - name: Create veth pair veth0 <-> veth0p if missing
+      ansible.builtin.shell: |
+        set -euo pipefail
+        if ! ip link show veth0 >/dev/null 2>&1; then
+          ip link add veth0 type veth peer name veth0p
+        fi
+      args:
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+
+    - name: Bring up veth interfaces and enable multicast
+      ansible.builtin.shell: |
+        set -euo pipefail
+        ip link set veth0 up
+        ip link set veth0 multicast on
+        ip link set veth0p up
+        ip link set veth0p multicast on
+      args:
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+
+    - name: Assign /32 VIP to veth0
+      ansible.builtin.shell: |
+        set -euo pipefail
+        ip addr show dev veth0 | grep -q '10\.10\.0\.200/32' || ip addr add 10.10.0.200/32 dev veth0
+      args:
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false

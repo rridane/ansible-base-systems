@@ -1,0 +1,58 @@
+tools:
+  kubectl:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  krew:
+    enabled: true
+    version: ""
+    krew_root: "/opt/krew"
+    plugins:
+      - ctx
+      - ns
+      - neat
+      - view-secret
+      - who-can
+      - rbac-view
+      - tree
+      - node-shell
+      - stern
+      - oidc-login
+
+  k9s:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  kustomize:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  helm:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  jq:
+    enabled: true
+    version: ""
+
+  yq:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  kubent:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  popeye:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+bin_path: "/usr/local/bin"
+system_arch: "amd64"

@@ -1,3 +1,4 @@
+---
 # Confirme que tu veux nettoyer ce nœud Kubernetes (destructif)
 kube_cleanup_enabled: true
 

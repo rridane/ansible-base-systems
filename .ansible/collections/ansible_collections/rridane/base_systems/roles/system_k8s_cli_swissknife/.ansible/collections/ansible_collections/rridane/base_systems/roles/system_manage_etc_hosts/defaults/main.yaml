@@ -1,0 +1,18 @@
+---
+# Liste d’entrées à gérer. Format recommandé :
+# - ip: "10.0.0.11"
+#   names: ["k8s-master-1", "k8s-master-1.localdomain"]
+#   comment: "control-plane"
+etc_hosts: []
+
+# State déclaratif : present | absent
+etc_hosts_state: present
+
+# Tag logique (pour le marker et la doc)
+etc_hosts_block_name: "etc_hosts"
+
+# Sauvegarder le fichier avant modification
+etc_hosts_backup: true
+
+# Forcer un newline final si manquant
+etc_hosts_ensure_eof_newline: true

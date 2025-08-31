@@ -1,0 +1,43 @@
+---
+- name: "K9s | Get latest release if version not specified"
+  uri:
+    url: "https://api.github.com/repos/derailed/k9s/releases/latest"
+    return_content: true
+  register: k9s_latest
+  when: tools.k9s.version | length == 0
+
+- name: "K9s | Set fact with latest version"
+  set_fact:
+    k9s_effective_version: "{{ (k9s_latest.json.tag_name | regex_replace('^v', '')) if (tools.k9s.version | length == 0) else tools.k9s.version }}"
+  when: tools.k9s.version | length == 0
+
+- name: "K9s | Use specified version if provided"
+  set_fact:
+    k9s_effective_version: "{{ tools.k9s.version }}"
+  when: tools.k9s.version | length > 0
+
+- name: "K9s | Check installed version"
+  command: "{{ bin_path }}/k9s version --short"
+  register: k9s_installed
+  changed_when: false
+  failed_when: false
+
+- block:
+    - name: "K9s | Download tarball"
+      get_url:
+        url: "https://github.com/derailed/k9s/releases/download/v{{ k9s_effective_version }}/k9s_Linux_{{ tools.k9s.arch }}.tar.gz"
+        dest: "/tmp/k9s.tar.gz"
+        mode: "0644"
+
+    - name: "K9s | Extract to {{ bin_path }}"
+      unarchive:
+        src: "/tmp/k9s.tar.gz"
+        dest: "{{ bin_path }}"
+        remote_src: true
+      become: true
+  when: k9s_installed.rc != 0 or (k9s_installed.stdout is defined and k9s_effective_version not in k9s_installed.stdout)
+
+- name: "K9s | Verify binary"
+  command: "{{ bin_path }}/k9s version --short"
+  register: k9s_verify
+  changed_when: false

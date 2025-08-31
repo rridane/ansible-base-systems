@@ -1,3 +1,4 @@
+---
 # tasks/main.yml
 - import_tasks: install-kubectl.yml
   when: tools.kubectl.enabled

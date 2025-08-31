@@ -1,0 +1,100 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: podman
+
+platforms:
+  # Distribution test machines
+  - name: ubuntu-20
+    image: "docker.io/geerlingguy/docker-ubuntu2004-ansible"
+    pre_build_image: true
+  - name: ubuntu-22
+    image: "docker.io/geerlingguy/docker-ubuntu2204-ansible:latest"
+    pre_build_image: true
+  - name: debian-12
+    image: "docker.io/geerlingguy/docker-debian12-ansible:latest"
+    pre_build_image: true
+  # Specific version test machines
+  - name: tools-specific-versions
+    image: "docker.io/geerlingguy/docker-ubuntu2204-ansible:latest"
+    pre_build_image: true
+
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+  config_options:
+    defaults:
+      callbacks_enabled: profile_tasks, timer
+  env:
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+  inventory:
+    group_vars:
+      all:
+        bin_path: "/usr/local/bin"
+        system_arch: "amd64"
+        tools:
+          kubectl:
+            enabled: true
+            version: ""
+            arch: "amd64"
+          krew:
+            enabled: true
+            version: ""
+            krew_root: "/opt/krew"
+            plugins:
+              - ctx
+              - ns
+              - neat
+              - view-secret
+              - who-can
+              - rbac-view
+              - tree
+              - node-shell
+              - stern
+              - oidc-login
+          k9s:
+            enabled: true
+            version: ""
+            arch: "amd64"
+          kustomize:
+            enabled: true
+            version: ""
+            arch: "amd64"
+          helm:
+            enabled: true
+            version: ""
+            arch: "amd64"
+          jq:
+            enabled: true
+            version: ""
+          yq:
+            enabled: true
+            version: ""
+            arch: "amd64"
+          kubent:
+            enabled: true
+            version: ""
+            arch: "amd64"
+          popeye:
+            enabled: true
+            version: ""
+            arch: "amd64"
+#    host_vars:
+#      tools-specific-versions:
+#        tools:
+#          k9s:
+#            version: "0.32.5"
+#          kubectl:
+#            version: "v1.28.0"
+#          helm:
+#            version: "3.12.0"
+
+verifier:
+  name: testinfra
+
+scenario:
+  name: default

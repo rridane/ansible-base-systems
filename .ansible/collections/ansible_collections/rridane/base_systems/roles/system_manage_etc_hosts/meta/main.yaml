@@ -1,0 +1,24 @@
+---
+galaxy_info:
+  role_name: system_manage_etc_hosts
+  author: rridane
+  description: "Gère un bloc ansible-managed dans /etc/hosts (présence/absence)."
+  license: MIT
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+        - bullseye
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+  galaxy_tags:
+    - cntlm
+    - proxy
+    - ntlm
+    - authentication
+    - linux
+    - network
+dependencies: [ ]

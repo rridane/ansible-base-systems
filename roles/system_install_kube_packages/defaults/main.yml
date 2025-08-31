@@ -1,3 +1,4 @@
+---
 # 'present' pour installer/mettre en place ; 'absent' pour purger
 kube_state: present
 
