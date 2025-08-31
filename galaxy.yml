@@ -37,43 +37,65 @@ homepage: https://github.com/rridane/ansible-base-systems
 issues: https://github.com/rridane/ansible-base-systems
 
 build_ignore:
-  # VCS / CI / tooling
-  - .git/
-  - .github/
-  - .gitignore
-  - .editorconfig
-  - .pre-commit-config.yaml
-  - .venv/
-  - venv/
-  - .tox/
-  - .mypy_cache/
-  - __pycache__/
-  - .pytest_cache/
-  - .idea/
-  - .vscode/
+  # VCS / IDE / env
+  - ".git"
+  - ".git/**"
+  - ".github"
+  - ".github/**"
+  - ".gitignore"
+  - ".editorconfig"
+  - ".pre-commit-config.yaml"
+  - ".idea"
+  - ".idea/**"
+  - ".vscode"
+  - ".vscode/**"
 
-  # Artefacts et caches
-  - "dist/"
+  # Environnements virtuels (tous niveaux)
+  - ".venv"
+  - ".venv/**"
+  - "venv"
+  - "venv/**"
+  - "**/.venv"
+  - "**/.venv/**"
+  - "**/venv"
+  - "**/venv/**"
+
+  # Caches/tests
+  - ".tox"
+  - ".tox/**"
+  - ".mypy_cache"
+  - ".mypy_cache/**"
+  - "__pycache__"
+  - "**/__pycache__/**"
+  - ".pytest_cache"
+  - ".pytest_cache/**"
+
+  # Artefacts
+  - "dist"
+  - "dist/**"
   - "*.tar.gz"
   - "*.zip"
   - "*.log"
   - "*.retry"
-  - ".venv"
 
-  # Tests Molecule (souvent volumineux, inutiles côté Galaxy)
-  - roles/*/molecule/
+  # Molecule (si tu ne veux pas les publier)
+  - "roles/*/molecule"
+  - "roles/*/molecule/**"
 
-  # Ne PAS exclure les README de rôles !
-  # Binaires/tarballs éventuels dans files/ (garde la config/templates)
-  - roles/*/files/*.tar
-  - roles/*/files/*.tar.gz
-  - roles/*/files/*.tgz
-  - roles/*/files/*.zip
-  - roles/*/files/*.deb
-  - roles/*/files/*.rpm
+  # Docs lourdes
+  - "docs"
+  - "docs/**"
+  - "assets"
+  - "assets/**"
+  - "images"
+  - "images/**"
+  - "screenshots"
+  - "screenshots/**"
 
-  # Docs/assets lourds
-  - docs/
-  - assets/
-  - images/
-  - screenshots/
+  # Grosse binaires éventuels
+  - "roles/*/files/*.tar"
+  - "roles/*/files/*.tar.gz"
+  - "roles/*/files/*.tgz"
+  - "roles/*/files/*.zip"
+  - "roles/*/files/*.deb"
+  - "roles/*/files/*.rpm"
