@@ -1,0 +1,70 @@
+---
+argument_specs:
+  main:
+    short_description: Configure les proxys système (APT, /etc/environment, systemd DefaultEnvironment).
+    options:
+      proxy_state:
+        type: str
+        choices: [present, absent]
+        default: present
+        description:
+          - État désiré de la configuration proxy.
+          - present => crée/maintient les fichiers de config.
+          - absent  => supprime proprement toutes les configurations.
+      http_proxy:
+        type: str
+        default: ""
+        description:
+          - URL du proxy HTTP. Ex: http://proxy.example:3128
+      https_proxy:
+        type: str
+        default: ""
+        description:
+          - URL du proxy HTTPS.
+          - Si vide, retombera sur http_proxy.
+      no_proxy:
+        type: str
+        default: ""
+        description:
+          - Liste NO_PROXY explicite (prioritaire). Si non vide, utilisée telle quelle.
+      no_proxy_list:
+        type: list
+        elements: str
+        default:
+          - "127.0.0.1"
+          - "localhost"
+          - ".svc"
+          - ".cluster.local"
+        description:
+          - Base de domaines/IP exclus du proxy si no_proxy est vide.
+      no_proxy_extra:
+        type: list
+        elements: str
+        default: []
+        description:
+          - Éléments additionnels à fusionner avec no_proxy_list (uniques) si no_proxy est vide.
+      apt_proxy_file:
+        type: str
+        default: /etc/apt/apt.conf.d/99-proxy.conf
+        description:
+          - Emplacement du fichier proxy APT.
+      environment_file:
+        type: str
+        default: /etc/environment
+        description:
+          - Fichier d'environnement global.
+      environment_block_name:
+        type: str
+        default: ansible_managed_proxy
+        description:
+          - Nom du bloc géré dans /etc/environment (blockinfile marker).
+      systemd_dropin_dir:
+        type: str
+        default: /etc/systemd/system.conf.d
+        description:
+          - Répertoire des drop-ins systemd [Manager].
+      systemd_dropin_file:
+        type: str
+        default: 10-proxy.conf
+        description:
+          - Nom du fichier drop-in systemd (placé dans systemd_dropin_dir).

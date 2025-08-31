@@ -1,38 +1,26 @@
-# roles/system-install-kube-packages/meta/argument_specs.yml
+
 ---
 argument_specs:
   main:
     short_description: Install or purge Kubernetes components (kubeadm, kubelet, kubectl)
     description:
-      - Manage installation or cleanup of Kubernetes packages.
+      - Manage installation or removal of Kubernetes packages only.
       - Uses official Kubernetes apt repositories from pkgs.k8s.io.
-      - State C(present) ensures packages are installed, state C(absent) resets and removes them.
+      - State C(present) ensures packages are installed, state C(absent) removes them.
     options:
       kube_state:
         type: str
         choices: [present, absent]
         default: present
-        description:
-          - Whether Kubernetes packages should be installed (C(present)) or purged (C(absent)).
       kube_version:
         type: str
-        required: false
         default: ""
         description:
           - Version string to install for kubeadm/kubelet/kubectl.
-          - If empty, the latest available in the repo is installed.
+          - If empty, the latest available is installed.
           - Example: C("1.30.2-1.1").
       kube_series:
         type: str
-        required: false
         default: "v1.30"
         description:
           - Kubernetes stable series to use for the apt repository.
-          - Used in pkgs.k8s.io path (C(v1.29), C(v1.30), etc.).
-      kube_cri_socket:
-        type: str
-        required: false
-        default: "/var/run/containerd/containerd.sock"
-        description:
-          - Path to CRI socket passed to kubeadm reset.
-          - Typically points to containerd or CRI-O runtime socket.

@@ -1,8 +1,8 @@
-# 'present' pour installer/mettre en place ; 'absent' pour purger/réinitialiser
+# 'present' pour installer/mettre en place ; 'absent' pour purger
 kube_state: present
 
 # Version Debian/Ubuntu (ex: "1.29.4-00"). Vide => dernière version dispo dans le repo.
 kube_version: ""
 
-# Chemin socket CRI
-kube_cri_socket: "/var/run/containerd/containerd.sock"
+# Série stable pkgs.k8s.io (ex: v1.30)
+kube_series: "v1.30"

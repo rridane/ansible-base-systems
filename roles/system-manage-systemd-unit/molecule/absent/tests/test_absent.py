@@ -1,5 +1,3 @@
-import pytest
-
 def test_unit_file_removed(host):
     """Vérifie que le fichier d'unité systemd a été supprimé"""
     unit_file = host.file("/etc/systemd/system/test-service.service")

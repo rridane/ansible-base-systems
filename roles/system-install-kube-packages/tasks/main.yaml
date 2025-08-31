@@ -1,58 +1,30 @@
 ---
-- name: "Kubernetes | Reset & purge (absent)"
+# ------------------------------- ABSENT ---------------------------------------
+
+- name: "Kubernetes | Remove packages (absent)"
   become: true
   when: kube_state == 'absent'
-  block:
-    - name: "[clean] kubeadm reset"
-      command: >
-        kubeadm reset --force --cri-socket={{ kube_cri_socket }}
-      register: _reset
-      failed_when: false
-      changed_when: _reset.rc == 0
+  ansible.builtin.apt:
+    name:
+      - kubeadm
+      - kubelet
+      - kubectl
+    state: absent
+    update_cache: true
 
-    - name: "[clean] remove kubernetes packages"
-      apt:
-        name: "{{ item }}"
-        state: absent
-        update_cache: true
-      loop:
-        - kubeadm
-        - kubelet
-        - kubectl
-
-    - name: "[clean] remove CNI config directory"
-      file:
-        path: /etc/cni/net.d
-        state: absent
-
-    - name: "[clean] down cni interfaces (best effort)"
-      ansible.builtin.command: ip link set {{ item }} down
-      loop:
-        - cni0
-        - flannel.1
-      failed_when: false
-      changed_when: false
-
-    - name: "[clean] delete cni interfaces (best effort)"
-      ansible.builtin.command: ip link delete {{ item }}
-      loop:
-        - cni0
-        - flannel.1
-      failed_when: false
-      changed_when: false
+# ------------------------------- PRESENT --------------------------------------
 
 - name: "Kubernetes | Install (present)"
   become: true
   when: kube_state == 'present'
   block:
-    # You can parametrize the series if you want (v1.29, v1.30, v1.31…)
-    # kube_series should be a string like "v1.30"
+
+    # kube_series doit être un string du type "v1.29", "v1.30", etc.
     - name: Set default kube_series if not provided
       ansible.builtin.set_fact:
         kube_series: "{{ kube_series | default('v1.30') }}"
 
     - name: Ensure base packages for APT over HTTPS and gpg exist
-      become: true
       ansible.builtin.apt:
         name:
           - ca-certificates
@@ -61,23 +33,19 @@
         update_cache: true
 
     - name: Ensure /etc/apt/keyrings exists
-      become: true
       ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
         mode: "0755"
 
-    # Use pkgs.k8s.io Release.key (NOT the old apt.kubernetes.io apt-key.gpg)
+    # Utilise pkgs.k8s.io (clé Release.key + dearmor vers .gpg binaire)
     - name: Download Kubernetes Release.key for the chosen series
-      become: true
       ansible.builtin.get_url:
         url: "https://pkgs.k8s.io/core:/stable:/{{ kube_series }}/deb/Release.key"
         dest: /etc/apt/keyrings/kubernetes-release.key
         mode: "0644"
 
-    # Dearmor into a proper keyring .gpg (APT requires the binary keyring)
     - name: Dearmor Release.key into keyring
-      become: true
       ansible.builtin.command:
         cmd: >
           gpg --dearmor
@@ -87,9 +55,8 @@
       args:
         creates: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
-    # Add the new repository (pkgs.k8s.io). Note the “/” suite and no component.
+    # Dépôt pkgs.k8s.io (suite "/" et pas de composant)
     - name: Add Kubernetes APT repository (pkgs.k8s.io)
-      become: true
       ansible.builtin.apt_repository:
         repo: >
           deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg]
@@ -98,9 +65,8 @@
         state: present
         update_cache: true
 
-    # Install the packages (pin exact version if kube_version is provided)
+    # Installe et pince éventuellement la version exacte si kube_version est définie
     - name: Install kubeadm/kubelet/kubectl
-      become: true
       ansible.builtin.apt:
         name: "{{ item }}{{ ('=' + kube_version) if (kube_version | length > 0) else '' }}"
         state: present

@@ -1,0 +1,196 @@
+# Pré-asserts (exactement un provider)
+- name: Compute selected content providers
+  set_fact:
+    _providers: >-
+      {{
+        [
+          (unit_content | length > 0) | ternary('content', omit),
+          (unit_template_src | length > 0) | ternary('template', omit),
+          (unit_src_path | length > 0) | ternary('file', omit),
+        ] | select('defined') | list
+      }}
+
+- name: Assert exactly one provider is set
+  assert:
+    that:
+      - _providers | length == 1
+    fail_msg: >-
+      You must set exactly ONE of: unit_content, unit_template_src, unit_src_path.
+      Got: {{ _providers | default([]) }}
+
+- name: Compute scope flag and user home
+  set_fact:
+    _is_system_scope: "{{ (unit_scope | default('system')) == 'system' }}"
+    _user_home_dir: >-
+      {{
+        ansible_user_dir
+        | default(ansible_env.HOME, true)
+        | default(lookup('env','HOME'), true)
+      }}
+
+- name: Compute unit base dir
+  set_fact:
+    _unit_dir: >-
+      {{
+        '/etc/systemd/system'
+        if _is_system_scope else
+        (_user_home_dir ~ '/.config/systemd/user')
+      }}
+
+- name: Compute drop-in dir
+  set_fact:
+    _dropin_dir: "{{ _unit_dir ~ '/' ~ unit_name ~ '.d' }}"
+
+- name: Compute file ownership
+  set_fact:
+    _owner: "{{ 'root' if _is_system_scope else (ansible_user_id | default(ansible_user) | default('root')) }}"
+    _group: "{{ 'root' if _is_system_scope else (ansible_user_gid | default(ansible_user_id) | default('root')) }}"
+
+# === Absent path ===
+- name: Ensure unit is absent
+  when: not unit_present | default(true)
+  block:
+    - name: Stop & disable (and unmask) unit if exists
+      systemd:
+        name: "{{ unit_name }}"
+        state: stopped
+        enabled: false
+        masked: false
+        scope: "{{ unit_scope | default('system') }}"
+      failed_when: false
+      become: "{{ _is_system_scope }}"
+
+    - name: Remove drop-ins directory
+      file:
+        path: "{{ _dropin_dir }}"
+        state: absent
+      become: "{{ _is_system_scope }}"
+
+    - name: Remove unit file
+      file:
+        path: "{{ _unit_dir }}/{{ unit_name }}"
+        state: absent
+      become: "{{ _is_system_scope }}"
+      notify: daemon reload
+
+    - name: Remove environment file if defined
+      when: unit_envfile_path | length > 0
+      file:
+        path: "{{ unit_envfile_path }}"
+        state: absent
+      become: "{{ _is_system_scope }}"
+
+    - name: Flush handlers now (daemon-reload)
+      meta: flush_handlers
+
+# === Present path ===
+- block:
+    - name: Ensure unit directory exists
+      file:
+        path: "{{ _unit_dir }}"
+        state: directory
+        mode: "0755"
+      become: "{{ _is_system_scope }}"
+
+    - name: Place environment file (if provided)
+      when: unit_envfile_path | length > 0 and unit_envfile_content | length > 0
+      copy:
+        dest: "{{ unit_envfile_path }}"
+        content: "{{ unit_envfile_content }}"
+        owner: "{{ _owner }}"
+        group: "{{ _group }}"
+        mode: "0644"
+      become: "{{ _is_system_scope }}"
+      register: _envfile_result
+
+    - name: Render unit file from inline content
+      when: unit_content | length > 0
+      copy:
+        dest: "{{ _unit_dir }}/{{ unit_name }}"
+        content: "{{ unit_content }}"
+        owner: "{{ _owner }}"
+        group: "{{ _group }}"
+        mode: "0644"
+      become: "{{ _is_system_scope }}"
+      register: _unit_result
+      notify: daemon reload
+
+    - name: Render unit file from template
+      when: unit_content | length == 0 and unit_template_src | length > 0
+      template:
+        src: "{{ unit_template_src }}"
+        dest: "{{ _unit_dir }}/{{ unit_name }}"
+        owner: "{{ _owner }}"
+        group: "{{ _group }}"
+        mode: "0644"
+      become: "{{ _is_system_scope }}"
+      register: _unit_result
+      notify: daemon reload
+
+    - name: Copy unit file from controller path
+      when: unit_content | length == 0 and unit_template_src | length == 0 and unit_src_path | length > 0
+      copy:
+        src: "{{ unit_src_path }}"
+        dest: "{{ _unit_dir }}/{{ unit_name }}"
+        owner: "{{ _owner }}"
+        group: "{{ _group }}"
+        mode: "0644"
+      become: "{{ _is_system_scope }}"
+      register: _unit_result
+      notify: daemon reload
+
+    - name: Ensure drop-in directory
+      when: unit_dropins | length > 0
+      file:
+        path: "{{ _dropin_dir }}"
+        state: directory
+        mode: "0755"
+      become: "{{ _is_system_scope }}"
+
+    - name: Place drop-ins
+      when: unit_dropins | length > 0
+      copy:
+        dest: "{{ _dropin_dir }}/{{ item.name }}"
+        content: "{{ item.content }}"
+        owner: "{{ _owner }}"
+        group: "{{ _group }}"
+        mode: "0644"
+      loop: "{{ unit_dropins }}"
+      become: "{{ _is_system_scope }}"
+      register: _dropins_result
+      notify: daemon reload
+
+    - name: Optionally validate unit with systemd-analyze verify
+      when:
+        - unit_validate_with_systemd_analyze | default(false)
+        - (_unit_result is defined and _unit_result.changed) or
+          (_dropins_result is defined and _dropins_result.changed) or
+          (_envfile_result is defined and _envfile_result.changed)
+      command: "systemd-analyze verify {{ _unit_dir }}/{{ unit_name }}"
+      changed_when: false
+      become: "{{ _is_system_scope }}"
+
+    - name: Enable/Mask unit
+      systemd:
+        name: "{{ unit_name }}"
+        enabled: "{{ unit_enabled | default(true) }}"
+        masked: "{{ unit_masked | default(false) }}"
+        scope: "{{ unit_scope | default('system') }}"
+        daemon_reload: true
+      become: "{{ _is_system_scope }}"
+
+    - name: Start/Reload/Restart unit if requested
+      when: unit_state is not none
+      systemd:
+        name: "{{ unit_name }}"
+        state: >-
+          {{
+            (unit_restart_on_change | default(true) and (
+              (_unit_result is defined and _unit_result.changed) or
+              (_dropins_result is defined and _dropins_result.changed) or
+              (_envfile_result is defined and _envfile_result.changed)
+            )) | ternary('restarted', unit_state)
+          }}
+        scope: "{{ unit_scope | default('system') }}"
+      become: "{{ _is_system_scope }}"
+  when: unit_present | default(true)
