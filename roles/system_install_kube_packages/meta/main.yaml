@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: system_install_kube_packages
+  author: rridane
+  description: "Gère les paquets kube (kubect, kubadm, kubelet)"
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions: ["bullseye", "bookworm"]
+    - name: Ubuntu
+      versions: ["20.04", "22.04", "24.04"]
+  galaxy_tags: ["hosts", "network", "bootstrap"]
+dependencies: []

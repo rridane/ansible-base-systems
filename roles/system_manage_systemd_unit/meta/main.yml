@@ -1,0 +1,27 @@
+galaxy_info:
+  role_name: system_manage_systemd_unit
+  author: rridane
+  description: Gérer des unités systemd (création, suppression, drop-ins, environment files, activation/désactivation, démarrage/redémarrage).
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+  galaxy_tags:
+    - systemd
+    - service
+    - linux
+    - init
+    - automation
+
+dependencies: []
