@@ -17,6 +17,7 @@
           - gzip
           - curl
           - ca-certificates
+          - git
         state: present
 
     - name: Ensure /usr/local/bin exists

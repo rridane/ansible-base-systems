@@ -1,8 +1,58 @@
-# Laisser vide pour prendre la dernière version disponible
-k9s_version: ""
+tools:
+  kubectl:
+    enabled: true
+    version: ""
+    arch: "amd64"
 
-# Architecture → on peut détecter via ansible_architecture mais ici on force pour Linux x86_64
-k9s_arch: "amd64"
+  krew:
+    enabled: true
+    version: ""
+    krew_root: "/opt/krew"
+    plugins:
+      - ctx
+      - ns
+      - neat
+      - view-secret
+      - who-can
+      - rbac-view
+      - tree
+      - node-shell
+      - stern
+      - oidc-login
 
-# Destination finale
-k9s_bin_path: "/usr/local/bin"
+  k9s:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  kustomize:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  helm:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  jq:
+    enabled: true
+    version: ""
+
+  yq:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  kubent:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+  popeye:
+    enabled: true
+    version: ""
+    arch: "amd64"
+
+bin_path: "/usr/local/bin"
+system_arch: "amd64"
