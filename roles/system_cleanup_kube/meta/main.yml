@@ -15,9 +15,9 @@ galaxy_info:
 
   platforms:
     - name: Debian
-      versions: [bullseye, bookworm]
+      versions: [ bullseye, bookworm ]
     - name: Ubuntu
-      versions: [focal, jammy, noble]
+      versions: [ focal, jammy, noble ]
 
   galaxy_tags:
     - networking
@@ -26,4 +26,4 @@ galaxy_info:
     - kubernetes
     - containers
 
-dependencies: []
+dependencies: [ ]

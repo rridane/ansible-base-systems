@@ -1,3 +1,4 @@
+---
 galaxy_info:
   role_name: system_manage_systemd_unit
   author: rridane
@@ -24,4 +25,4 @@ galaxy_info:
     - init
     - automation
 
-dependencies: []
+dependencies: [ ]
