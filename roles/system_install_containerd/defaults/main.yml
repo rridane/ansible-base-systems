@@ -22,3 +22,13 @@ containerd_registries:
 
 # Proxy (vide pour désactiver)
 containerd_proxy: ""
+
+# Proxy containerd (laisser vide pour désactiver le drop-in)
+containerd_proxy_http: ""          # ex: http://127.0.0.1:3128
+containerd_proxy_https: ""         # par défaut = containerd_proxy_http si vide
+containerd_no_proxy: ""            # si vide, on génère une valeur par défaut
+containerd_no_proxy_extra: []      # hôtes/réseaux supplémentaires (ex: ['harbor.intra', '10.33.0.0/16'])
+
+# Emplacement du drop-in systemd
+containerd_proxy_dropin_path: "/etc/systemd/system/containerd.service.d"
+containerd_proxy_dropin_file: "http-proxy.conf"

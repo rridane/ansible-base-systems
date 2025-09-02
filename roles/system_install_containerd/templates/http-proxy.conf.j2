@@ -1,0 +1,10 @@
+[Service]
+{% if containerd_proxy_http  | length > 0 %}
+Environment="HTTP_PROXY={{ containerd_proxy_http }}"
+{% endif %}
+{% if containerd_proxy_https | length > 0 %}
+Environment="HTTPS_PROXY={{ containerd_proxy_https }}"
+{% endif %}
+{% if containerd_no_proxy     | length > 0 %}
+Environment="NO_PROXY={{ containerd_no_proxy }}"
+{% endif %}

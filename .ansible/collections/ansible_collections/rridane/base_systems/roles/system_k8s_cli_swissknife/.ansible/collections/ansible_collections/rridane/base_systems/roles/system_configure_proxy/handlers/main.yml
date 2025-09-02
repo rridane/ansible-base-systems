@@ -1,6 +1,0 @@
----
-- name: systemd daemon reexec
-  command: systemctl daemon-reexec
-  become: true
-  tags:
-    - skip_ansible_lint

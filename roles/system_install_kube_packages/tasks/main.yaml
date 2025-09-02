@@ -38,12 +38,14 @@
         state: directory
         mode: "0755"
 
-    # Utilise pkgs.k8s.io (clé Release.key + dearmor vers .gpg binaire)
-    - name: Download Kubernetes Release.key for the chosen series
-      ansible.builtin.get_url:
-        url: "https://pkgs.k8s.io/core:/stable:/{{ kube_series }}/deb/Release.key"
-        dest: /etc/apt/keyrings/kubernetes-release.key
-        mode: "0644"
+    - name: "Download Kubernetes Release.key for the chosen series (curl)"
+      ansible.builtin.command: >
+        curl -L --fail --show-error
+        -o /etc/apt/keyrings/kubernetes-release.key
+        "https://pkgs.k8s.io/core:/stable:/{{ kube_series }}/deb/Release.key"
+      args:
+        creates: /etc/apt/keyrings/kubernetes-release.key
+      become: yes
 
     - name: Dearmor Release.key into keyring
       ansible.builtin.command:

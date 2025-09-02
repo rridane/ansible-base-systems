@@ -54,13 +54,17 @@ def test_modules_loaded(host):
 
 def test_sysctl_values_applied(host):
     """Vérifie que les valeurs sysctl ont été appliquées"""
-    # Vérifie les valeurs sysctl actuelles
+    # Méthode plus fiable pour détecter les conteneurs
+    is_container = host.run("grep -q docker /proc/1/cgroup || grep -q kubepods /proc/1/cgroup || test -f /.dockerenv || echo 'container'").stdout.strip() == 'container'
+
+    if is_container:
+        pytest.skip("Not applicable in containers")
+
     for param, expected_value in [
         ("net.bridge.bridge-nf-call-ip6tables", "1"),
         ("net.bridge.bridge-nf-call-iptables", "1"),
         ("net.ipv4.ip_forward", "1")
     ]:
-        # Certains paramètres peuvent ne pas exister si les modules ne sont pas chargés
         result = host.run(f"sysctl -n {param} 2>/dev/null || echo 'not_present'")
         if result.stdout.strip() != "not_present":
             assert result.stdout.strip() == expected_value

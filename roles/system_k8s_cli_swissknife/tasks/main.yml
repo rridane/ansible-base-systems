@@ -1,28 +1,32 @@
 ---
-# tasks/main.yml
-- import_tasks: install-kubectl.yml
-  when: tools.kubectl.enabled
+# uninstall global si demandé
+- import_tasks: uninstall-all.yml
+  when: tools_state == "absent"
 
-- import_tasks: install-krew.yml
-  when: tools.krew.enabled
+- name: "Install tools"
+  become: true
+  when: tools_state == "present"
+  block:
+    - import_tasks: install-krew.yml
+      when: tools.krew.enabled
 
-- import_tasks: install-k9s.yml
-  when: tools.k9s.enabled
+    - import_tasks: install-k9s.yml
+      when: tools.k9s.enabled
 
-- import_tasks: install-kustomize.yml
-  when: tools.kustomize.enabled
+    - import_tasks: install-kustomize.yml
+      when: tools.kustomize.enabled
 
-- import_tasks: install-helm.yml
-  when: tools.helm.enabled
+    - import_tasks: install-helm.yml
+      when: tools.helm.enabled
 
-- import_tasks: install-jq.yml
-  when: tools.jq.enabled
+    - import_tasks: install-jq.yml
+      when: tools.jq.enabled
 
-- import_tasks: install-yq.yml
-  when: tools.yq.enabled
+    - import_tasks: install-yq.yml
+      when: tools.yq.enabled
 
-- import_tasks: install-kubent.yml
-  when: tools.kubent.enabled
+    - import_tasks: install-kubent.yml
+      when: tools.kubent.enabled
 
-- import_tasks: install-popeye.yml
-  when: tools.popeye.enabled
+    - import_tasks: install-popeye.yml
+      when: tools.popeye.enabled

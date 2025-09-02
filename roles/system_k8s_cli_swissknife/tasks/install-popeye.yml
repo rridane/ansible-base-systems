@@ -1,31 +1,39 @@
 ---
-- name: Get popeye latest version
-  ansible.builtin.uri:
-    url: "https://api.github.com/repos/derailed/popeye/releases/latest"
-    return_content: yes
-  register: popeye_latest
-  when: tools.popeye.version == ""
+# 1) Récupérer la dernière version si aucune n’est fournie
+- name: "Popeye | Get latest release (curl) if version not specified"
+  ansible.builtin.command: >
+    curl -sL --fail --show-error
+    -H "Accept: application/vnd.github+json"
+    -H "User-Agent: ansible-curl"
+    https://api.github.com/repos/derailed/popeye/releases/latest
+  register: popeye_latest_raw
+  changed_when: false
+  when: (tools.popeye.version | default('') | string | length) == 0
 
-- name: Set popeye version
+# 2) Calculer la version effective
+- name: "Popeye | Compute effective version"
   ansible.builtin.set_fact:
-    popeye_version: "{{ popeye_latest.json.tag_name }}"
-  when: tools.popeye.version == ""
+    popeye_version: >-
+      {{
+        tools.popeye.version
+        if (tools.popeye.version | default('') | string | length) > 0
+        else (popeye_latest_raw.stdout | from_json).tag_name
+      }}
 
-- name: Use specified popeye version
-  ansible.builtin.set_fact:
-    popeye_version: "{{ tools.popeye.version }}"
-  when: tools.popeye.version != ""
-
-- name: Download popeye
-  ansible.builtin.get_url:
-    url: "https://github.com/derailed/popeye/releases/download/{{ popeye_version }}/popeye_Linux_{{ tools.popeye.arch }}.tar.gz"
-    dest: "/tmp/popeye.tar.gz"
+# 3) Télécharger le tarball
+- name: "Popeye | Download tarball"
+  ansible.builtin.command: >
+    curl -L --fail --show-error
+    -o /tmp/popeye.tar.gz
+    "https://github.com/derailed/popeye/releases/download/{{ popeye_version }}/popeye_Linux_{{ tools.popeye.arch | default(system_arch) }}.tar.gz"
+  args:
+    creates: /tmp/popeye.tar.gz
   become: true
 
-- name: Install popeye
+# 4) Installer
+- name: "Popeye | Extract to {{ bin_path }}"
   ansible.builtin.unarchive:
-    src: "/tmp/popeye.tar.gz"
+    src: /tmp/popeye.tar.gz
     dest: "{{ bin_path }}"
-    remote_src: yes
+    remote_src: true
   become: true
-

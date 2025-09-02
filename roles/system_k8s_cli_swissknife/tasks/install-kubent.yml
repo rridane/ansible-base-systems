@@ -1,30 +1,39 @@
 ---
-- name: Get kubent latest version
-  ansible.builtin.uri:
-    url: "https://api.github.com/repos/doitintl/kube-no-trouble/releases/latest"
-    return_content: yes
-  register: kubent_latest
-  when: tools.kubent.version == ""
+# 1) Récupérer la dernière version si aucune n’est fournie
+- name: "Kubent | Get latest release (curl) if version not specified"
+  ansible.builtin.command: >
+    curl -sL --fail --show-error
+    -H "Accept: application/vnd.github+json"
+    -H "User-Agent: ansible-curl"
+    https://api.github.com/repos/doitintl/kube-no-trouble/releases/latest
+  register: kubent_latest_raw
+  changed_when: false
+  when: (tools.kubent.version | default('') | string | length) == 0
 
-- name: Set kubent version
+# 2) Calculer la version effective
+- name: "Kubent | Compute effective version"
   ansible.builtin.set_fact:
-    kubent_version: "{{ kubent_latest.json.tag_name }}"
-  when: tools.kubent.version == ""
+    kubent_version: >-
+      {{
+        tools.kubent.version
+        if (tools.kubent.version | default('') | string | length) > 0
+        else (kubent_latest_raw.stdout | from_json).tag_name
+      }}
 
-- name: Use specified kubent version
-  ansible.builtin.set_fact:
-    kubent_version: "{{ tools.kubent.version }}"
-  when: tools.kubent.version != ""
-
-- name: Download kubent
-  ansible.builtin.get_url:
-    url: "https://github.com/doitintl/kube-no-trouble/releases/download/{{ kubent_version }}/kubent-{{ kubent_version }}-linux-{{ tools.kubent.arch }}.tar.gz"
-    dest: "/tmp/kubent.tar.gz"
+# 3) Télécharger le tarball
+- name: "Kubent | Download tarball"
+  ansible.builtin.command: >
+    curl -L --fail --show-error
+    -o /tmp/kubent.tar.gz
+    "https://github.com/doitintl/kube-no-trouble/releases/download/{{ kubent_version }}/kubent-{{ kubent_version }}-linux-{{ tools.kubent.arch | default(system_arch) }}.tar.gz"
+  args:
+    creates: /tmp/kubent.tar.gz
   become: true
 
-- name: Install kubent
+# 4) Installer
+- name: "Kubent | Extract to {{ bin_path }}"
   ansible.builtin.unarchive:
     src: "/tmp/kubent.tar.gz"
     dest: "{{ bin_path }}"
-    remote_src: yes
+    remote_src: true
   become: true

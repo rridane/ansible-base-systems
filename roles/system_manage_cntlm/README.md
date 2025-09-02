@@ -1,6 +1,6 @@
 # Ansible Role: rridane.cntlm
 
-Ce rôle installe et configure **CNTLM** (proxy NTLM/NTLMv2) depuis les sources, crée le service **systemd** et gère sa configuration.  
+Ce rôle installe et configure **CNTLM** (proxy NTLM/NTLMv2) depuis les sources, mais il ne créé par la configuration systemd, envisagez l'utilisation de system-add-systemd-unit si c'est un besoin. 
 Supporte les états **present/absent**.
 
 ---

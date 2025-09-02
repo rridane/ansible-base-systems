@@ -53,12 +53,13 @@
         mode: "0755"
       become: true
 
-    - name: Download source tarball
-      ansible.builtin.get_url:
-        url: "{{ cntlm_source_url }}"
-        dest: "{{ cntlm_build_dir }}/cntlm.tar.gz"
-        mode: "0644"
-        checksum: "{{ cntlm_source_checksum | default(omit) }}"
+    - name: "Download CNTLM source tarball (curl fallback)"
+      ansible.builtin.command: >
+        curl -L --fail --show-error
+        -o {{ cntlm_build_dir }}/cntlm.tar.gz
+        "{{ cntlm_source_url }}"
+      args:
+        creates: "{{ cntlm_build_dir }}/cntlm.tar.gz"
       when: not cntlm_bin_present.stat.exists
       become: true
 
@@ -119,7 +120,6 @@
         group: root
       diff: false
       become: true
-      notify: "{{ ['restart cntlm'] if cntlm_restart_on_change else [] }}"
 
   when: cntlm_state == 'present'
 

@@ -1,36 +1,44 @@
 ---
-- name: Ensure krew base dir exists
+# Crée le dossier racine de Krew
+- name: "Krew | Ensure krew_root exists"
   ansible.builtin.file:
     path: "{{ tools.krew.krew_root }}"
     state: directory
     mode: "0755"
   become: true
 
-- name: Get krew latest version
-  ansible.builtin.uri:
-    url: https://api.github.com/repos/kubernetes-sigs/krew/releases/latest
-    return_content: yes
-  register: krew_latest
-  when: tools.krew.version | default('') | string | length == 0
+# Récupère la dernière version si aucune n'est fournie
+- name: "Krew | Get latest release (curl) if version not specified"
+  ansible.builtin.command: >
+    curl -sL --fail --show-error
+    -H "Accept: application/vnd.github+json"
+    -H "User-Agent: ansible-curl"
+    https://api.github.com/repos/kubernetes-sigs/krew/releases/latest
+  register: krew_latest_raw
+  changed_when: false
+  when: (tools.krew.version | default('') | string | length) == 0
 
-- name: Set krew version (auto)
+- name: "Krew | Compute effective version"
   ansible.builtin.set_fact:
-    krew_version: "{{ krew_latest.json.tag_name }}"
-  when: tools.krew.version | default('') | string | length == 0
+    krew_version: >-
+      {{
+        tools.krew.version
+        if (tools.krew.version | default('') | string | length) > 0
+        else (krew_latest_raw.stdout | from_json).tag_name
+      }}
 
-- name: Set krew version (pinned)
-  ansible.builtin.set_fact:
-    krew_version: "{{ tools.krew.version }}"
-  when: tools.krew.version | default('') | string | length > 0
-
-- name: Download krew tarball
-  ansible.builtin.get_url:
-    url: "https://github.com/kubernetes-sigs/krew/releases/download/{{ krew_version }}/krew-linux_{{ tools.krew.arch | default(system_arch) }}.tar.gz"
-    dest: "/tmp/krew-linux_{{ tools.krew.arch | default(system_arch) }}.tar.gz"
-    mode: "0644"
+# Télécharge l’archive pour l’arch cible
+- name: "Krew | Download tarball"
+  ansible.builtin.command: >
+    curl -L --fail --show-error
+    -o /tmp/krew-linux_{{ tools.krew.arch | default(system_arch) }}.tar.gz
+    "https://github.com/kubernetes-sigs/krew/releases/download/{{ krew_version }}/krew-linux_{{ tools.krew.arch | default(system_arch) }}.tar.gz"
+  args:
+    creates: "/tmp/krew-linux_{{ tools.krew.arch | default(system_arch) }}.tar.gz"
   become: true
 
-- name: Unarchive krew tarball into krew_root
+# Décompresse dans krew_root (on enlève le répertoire racine de l’archive)
+- name: "Krew | Unarchive to krew_root"
   ansible.builtin.unarchive:
     src: "/tmp/krew-linux_{{ tools.krew.arch | default(system_arch) }}.tar.gz"
     dest: "{{ tools.krew.krew_root }}"
@@ -38,26 +46,23 @@
     extra_opts: ["--strip-components=1"]
   become: true
 
-# ⬇️ Étape bootstrap : crée {{ krew_root }}/bin/kubectl-krew
-- name: Bootstrap krew (first install)
-  ansible.builtin.shell: |
-    set -e
-    KREW_ROOT="{{ tools.krew.krew_root }}" \
+# Bootstrap Krew (crée {{ krew_root }}/bin/kubectl-krew)
+- name: "Krew | Install (bootstrap)"
+  ansible.builtin.command: >
     "{{ tools.krew.krew_root }}/krew-linux_{{ tools.krew.arch | default(system_arch) }}" install krew
   args:
     creates: "{{ tools.krew.krew_root }}/bin/kubectl-krew"
-  become: true
   environment:
-    # kubectl-krew n’a pas besoin d’un PATH spécial ici, mais si tu veux :
-    PATH: "{{ ansible_env.PATH }}"
+    KREW_ROOT: "{{ tools.krew.krew_root }}"
+  become: true
 
-# Option propre pour le PATH système (évite /etc/environment)
-- name: Ensure krew is on PATH for interactive shells
+# Met Krew dans le PATH des shells interactifs
+- name: "Krew | Ensure PATH via /etc/profile.d"
   ansible.builtin.copy:
     dest: /etc/profile.d/krew.sh
     mode: "0644"
     content: |
-      # Added by system-k8s-cli-swissknife
+      # Added by ansible
       if [ -d "{{ tools.krew.krew_root }}/bin" ]; then
         case ":$PATH:" in
           *:"{{ tools.krew.krew_root }}/bin":*) ;;
@@ -66,8 +71,8 @@
       fi
   become: true
 
-# Liste les plugins déjà installés pour idempotence
-- name: List installed krew plugins
+# Liste les plugins installés (pour idempotence)
+- name: "Krew | List installed plugins"
   ansible.builtin.command: "{{ tools.krew.krew_root }}/bin/kubectl-krew list"
   register: krew_list
   changed_when: false
@@ -77,7 +82,8 @@
     PATH: "{{ tools.krew.krew_root }}/bin:{{ ansible_env.PATH }}"
   become: true
 
-- name: Install krew plugins
+# Installe les plugins manquants
+- name: "Krew | Install plugins"
   ansible.builtin.command: "{{ tools.krew.krew_root }}/bin/kubectl-krew install {{ item }}"
   loop: "{{ tools.krew.plugins }}"
   when: krew_list.stdout is not defined or (item not in (krew_list.stdout_lines | default([])))

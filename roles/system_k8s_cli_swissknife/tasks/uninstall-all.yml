@@ -1,0 +1,26 @@
+---
+- name: "Uninstall | remove managed binaries"
+  ansible.builtin.file:
+    path: "{{ bin_path }}/{{ item }}"
+    state: absent
+  loop: "{{ tools_to_remove }}"
+  become: true
+
+- name: "Uninstall | remove jq package"
+  ansible.builtin.apt:
+    name: jq
+    state: absent
+    update_cache: true
+  become: true
+
+- name: "Uninstall | remove krew profile script"
+  ansible.builtin.file:
+    path: "{{ krew_profile_script_path | default('/etc/profile.d/krew.sh') }}"
+    state: absent
+  become: true
+
+- name: "Uninstall | remove krew root directory"
+  ansible.builtin.file:
+    path: "{{ tools.krew.krew_root }}"
+    state: absent
+  become: true

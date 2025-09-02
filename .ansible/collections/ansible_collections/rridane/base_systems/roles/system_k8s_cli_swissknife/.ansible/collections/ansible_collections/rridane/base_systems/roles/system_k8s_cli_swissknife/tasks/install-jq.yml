@@ -1,5 +1,0 @@
-- name: Install jq via package manager
-  package:
-    name: jq
-    state: present
-  become: true

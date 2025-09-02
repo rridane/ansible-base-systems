@@ -1,4 +1,0 @@
-# {{ net_tuning_header | default('Managed by Ansible (net-tuning role)') }}
-{% for m in (net_tuning_modules | unique) -%}
-    {{ m }}
-{% endfor -%}

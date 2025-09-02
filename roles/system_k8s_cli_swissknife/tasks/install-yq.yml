@@ -1,24 +1,58 @@
 ---
-- name: Get yq latest version
-  ansible.builtin.uri:
-    url: "https://api.github.com/repos/mikefarah/yq/releases/latest"
-    return_content: yes
-  register: yq_latest
-  when: tools.yq.version == ""
+# 1) Récupérer la dernière version si aucune n’est fournie
+- name: "K9s | Get latest release (curl) if version not specified"
+  ansible.builtin.command: >
+    curl -sL --fail --show-error
+    -H "Accept: application/vnd.github+json"
+    -H "User-Agent: ansible-curl"
+    https://api.github.com/repos/derailed/k9s/releases/latest
+  register: k9s_latest_raw
+  changed_when: false
+  when: (tools.k9s.version | default('') | string | length) == 0
 
-- name: Set yq version
+# 2) Déterminer la version effective
+- name: "K9s | Compute effective version"
   ansible.builtin.set_fact:
-    yq_version: "{{ yq_latest.json.tag_name }}"
-  when: tools.yq.version == ""
+    k9s_effective_version: >-
+      {{
+        tools.k9s.version
+        if (tools.k9s.version | default('') | string | length) > 0
+        else ((k9s_latest_raw.stdout | from_json).tag_name | regex_replace('^v',''))
+      }}
 
-- name: Use specified yq version
-  ansible.builtin.set_fact:
-    yq_version: "{{ tools.yq.version }}"
-  when: tools.yq.version != ""
+# 3) Vérifier la version installée
+- name: "K9s | Check installed version"
+  ansible.builtin.command: "{{ bin_path }}/k9s version --short"
+  register: k9s_installed
+  changed_when: false
+  failed_when: false
 
-- name: Download yq
-  ansible.builtin.get_url:
-    url: "https://github.com/mikefarah/yq/releases/download/{{ yq_version }}/yq_linux_{{ tools.yq.arch }}"
-    dest: "{{ bin_path }}/yq"
-    mode: "0755"
-  become: true
+# 4) Installer si absent ou mauvaise version
+- block:
+    - name: "K9s | Download tarball"
+      ansible.builtin.command: >
+        curl -L --fail --show-error
+        -o /tmp/k9s.tar.gz
+        "https://github.com/derailed/k9s/releases/download/v{{ k9s_effective_version }}/k9s_Linux_{{ tools.k9s.arch | default(system_arch) }}.tar.gz"
+      args:
+        creates: /tmp/k9s.tar.gz
+      become: true
+
+    - name: "K9s | Extract to {{ bin_path }}"
+      ansible.builtin.unarchive:
+        src: /tmp/k9s.tar.gz
+        dest: "{{ bin_path }}"
+        remote_src: true
+      become: true
+  when: >
+    k9s_installed.rc != 0 or
+    (
+      k9s_installed.stdout is defined and
+      (k9s_installed.stdout | regex_search('(?i)v?{{ k9s_effective_version | regex_escape }}')) is not truthy
+    )
+
+# 5) Vérification finale
+- name: "K9s | Verify binary"
+  ansible.builtin.command: "{{ bin_path }}/k9s version --short"
+  register: k9s_verify
+  changed_when: false

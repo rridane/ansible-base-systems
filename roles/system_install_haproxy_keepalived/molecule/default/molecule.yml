@@ -34,7 +34,7 @@ provisioner:
   inventory:
     group_vars:
       haproxy-ha:
-        containerd_state: present   # ← pas utilisé mais homogénéité
+#        haproxy_keepalived_state: present   # present | absent
         # ==== Variables HAProxy ====
         haproxy_username: haproxy
         haproxy_groupname: haproxy

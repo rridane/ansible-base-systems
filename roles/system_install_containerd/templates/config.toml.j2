@@ -3,9 +3,15 @@ root = "{{ containerd_root }}"
 state = "/run/containerd"
 
 [plugins."io.containerd.grpc.v1.cri"]
-systemd_cgroup = true
-sandbox_image = "registry.k8s.io/pause:3.9"
+sandbox_image = "{{ containerd_sandbox_image | default('registry.k8s.io/pause:3.9') }}"
 
 [plugins."io.containerd.grpc.v1.cri".registry]
 # On délègue la config des registries à des fichiers dédiés
 config_path = "{{ containerd_registry_config_path }}"
+
+# --- runc v2 + systemd cgroups ---
+[plugins."io.containerd.grpc.v1.cri".containerd]
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+runtime_type = "io.containerd.runc.v2"
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+SystemdCgroup = true

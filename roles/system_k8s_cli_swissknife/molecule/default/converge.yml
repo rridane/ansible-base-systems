@@ -4,4 +4,4 @@
   become: true
   gather_facts: true
   roles:
-    - role: system-k8s-cli-swissknife
+    - role: system_k8s_cli_swissknife

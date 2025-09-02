@@ -1,23 +1,32 @@
 ---
 # Pré-asserts (exactement un provider)
-- name: Compute selected content providers
+- name: Compute provider booleans
+  ansible.builtin.set_fact:
+    _has_content:  "{{ unit_content is defined and (unit_content | string) | length > 0 }}"
+    _has_template: "{{ unit_template_src is defined and (unit_template_src | string) | length > 0 }}"
+    _has_file:     "{{ unit_src_path   is defined and (unit_src_path   | string) | length > 0 }}"
+
+- name: Build provider list from booleans (no omit)
   ansible.builtin.set_fact:
     _providers: >-
       {{
-        [
-          (unit_content | length > 0) | ternary('content', omit),
-          (unit_template_src | length > 0) | ternary('template', omit),
-          (unit_src_path | length > 0) | ternary('file', omit),
-        ] | select('defined') | list
+        ([] + (['content']  if _has_content  else [])
+            + (['template'] if _has_template else [])
+            + (['file']     if _has_file     else []))
       }}
 
 - name: Assert exactly one provider is set
   ansible.builtin.assert:
     that:
-      - _providers | length == 1
+      - (_has_content|int + _has_template|int + _has_file|int) == 1
     fail_msg: >-
       You must set exactly ONE of: unit_content, unit_template_src, unit_src_path.
       Got: {{ _providers | default([]) }}
+    success_msg: "Provider OK: {{ _providers[0] }}"
+
+- name: Remember chosen provider
+  ansible.builtin.set_fact:
+    _provider: "{{ _providers[0] }}"
 
 - name: Compute scope flag and user home
   ansible.builtin.set_fact:

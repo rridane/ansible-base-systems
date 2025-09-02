@@ -37,10 +37,6 @@ provisioner:
         bin_path: "/usr/local/bin"
         system_arch: "amd64"
         tools:
-          kubectl:
-            enabled: true
-            version: ""
-            arch: "amd64"
           krew:
             enabled: true
             version: ""
@@ -83,15 +79,6 @@ provisioner:
             enabled: true
             version: ""
             arch: "amd64"
-#    host_vars:
-#      tools-specific-versions:
-#        tools:
-#          k9s:
-#            version: "0.32.5"
-#          kubectl:
-#            version: "v1.28.0"
-#          helm:
-#            version: "3.12.0"
 
 verifier:
   name: testinfra

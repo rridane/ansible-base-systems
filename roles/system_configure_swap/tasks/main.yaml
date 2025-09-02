@@ -8,6 +8,7 @@
 - block:
     - name: "Swap | Disable now"
       ansible.builtin.command: swapoff -a
+      become: true
       when: (swap_show.stdout | length) > 0
 
     - name: "Swap | Comment swap entries in fstab"
@@ -16,11 +17,13 @@
         regexp: '^(?!#)(\S+\s+\S+\s+swap\s+\S+.*)$'
         replace: '# \1'
         backup: false
+      become: true
   when: not swap_enabled
 
 - block:
     - name: "Swap | Enable now"
       ansible.builtin.command: swapon -a
+      become: true
 
     - name: "Swap | Uncomment swap entries in fstab"
       ansible.builtin.replace:
@@ -28,4 +31,5 @@
         regexp: '^#\s*(\S+\s+\S+\s+swap\s+\S+.*)$'
         replace: '\1'
         backup: false
+      become: true
   when: swap_enabled

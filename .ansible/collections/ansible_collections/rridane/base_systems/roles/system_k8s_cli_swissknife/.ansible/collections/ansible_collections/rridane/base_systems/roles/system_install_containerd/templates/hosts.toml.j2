@@ -1,7 +1,0 @@
-server = "{{ (registry.insecure | default(false)) | ternary('http','https') }}://{{ registry.host }}:{{ registry.port }}"
-{% set eps = registry.endpoints | default([ (registry.insecure|default(false))|ternary('http','https') ~ '://' ~ registry.host ~ ':' ~ registry.port ]) %}
-{% for ep in eps %}
-[host."{{ ep }}"]
-capabilities = ["pull","resolve","push"]
-skip_verify = {{ 'true' if (ep.startswith('http://') or registry.insecure | default(false)) else 'false' }}
-{% endfor %}

@@ -4,4 +4,4 @@
   gather_facts: true
   hosts: all
   roles:
-    - role: system-install-cntlm
+    - role: system_manage_cntlm

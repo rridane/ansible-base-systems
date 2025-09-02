@@ -1,0 +1,4 @@
+# Managed by Ansible - DO NOT EDIT MANUALLY
+{% for key, value in net_tuning_sysctls.items() %}
+    {{ key }} = {{ value }}
+{% endfor %}

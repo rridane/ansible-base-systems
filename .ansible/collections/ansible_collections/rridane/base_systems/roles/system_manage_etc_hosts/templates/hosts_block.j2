@@ -1,3 +1,0 @@
-{% for h in etc_hosts | default([]) %}
-    {{ h.ip }}  {{ (h.names | default([]) | unique) | join(' ') }}{% if h.comment is defined and h.comment|trim %}  # {{ h.comment }}{% endif %}
-{% endfor %}

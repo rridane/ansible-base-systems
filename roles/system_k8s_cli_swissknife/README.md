@@ -16,11 +16,6 @@ Objectif : une **boîte à outils prête à l’emploi**, idempotente, et facile
 
 ## 🚀 Ce que fait le rôle (vue d’ensemble)
 
-### kubectl
-- Si `tools.kubectl.version` est **vide** ⇒ résout la **dernière stable** (`stable.txt`).
-- Ajoute le dépôt **pkgs.k8s.io** (série **déduite** de la version, ex : `v1.30`).
-- Installe `kubectl` (avec **pin** sur la version APT exacte si possible).
-
 ### krew
 - Télécharge la **release** (dernière ou version fixée), **bootstrap** krew dans `krew_root`.
 - Ajoute `/etc/profile.d/krew.sh`.
@@ -46,11 +41,6 @@ system_arch: "amd64"
 
 ```yaml
 tools:
-  kubectl:
-    enabled: true
-    version: ""     # "" => dernière stable, ex "v1.30.4" sinon
-    arch: "amd64"
-    # (le rôle déduit en interne la "série" vX.Y pour pkgs.k8s.io)
   krew:
     enabled: true
     version: ""     # "" => dernière release krew
@@ -95,15 +85,6 @@ tools:
     arch: "amd64"
 
 ```
-
-### `tools.kubectl`
-
-| Clé     | Type | Défaut | Notes |
-|---------|------|--------|-------|
-| enabled | bool | true   | Active/désactive l’installation. |
-| version | str  | ""     | `""` ⇒ dernière stable. Sinon ex. `v1.30.3`. Le rôle déduit `v1.30` pour l’URL pkgs.k8s.io. |
-| arch    | str  | amd64  | Architecture cible (utile surtout si installation binaire directe — ici dépôt APT). |
-
 
 ### `tools.krew`
 

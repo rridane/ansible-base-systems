@@ -5,4 +5,4 @@
     unit_present: false
     unit_scope: "system"
   roles:
-    - role: system-add-systemd-unit
+    - role: system_manage_systemd_unit

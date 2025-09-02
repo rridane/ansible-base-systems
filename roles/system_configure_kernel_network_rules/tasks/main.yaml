@@ -39,6 +39,12 @@
         dest: "{{ net_tuning_modules_conf_path }}"
         mode: "0644"
 
+    - name: "Sysctl | Ensure sysctl conf file exists"
+      ansible.builtin.template:
+        src: sysctl.conf.j2
+        dest: "{{ net_tuning_sysctl_conf_path }}"
+        mode: "0644"
+
     - name: "Sysctl | Apply rules"
       ansible.posix.sysctl:
         name: "{{ item.key }}"

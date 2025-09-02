@@ -1,30 +1,44 @@
 ---
-- name: Get kustomize latest version
-  ansible.builtin.uri:
-    url: "https://api.github.com/repos/kubernetes-sigs/kustomize/releases/latest"
-    return_content: yes
-  register: kustomize_latest
-  when: tools.kustomize.version == ""
+# 1) Récupérer la dernière version si aucune n’est fournie
+- name: "Kustomize | Get latest release (curl) if version not specified"
+  ansible.builtin.command: >
+    curl -sL --fail --show-error
+    -H "Accept: application/vnd.github+json"
+    -H "User-Agent: ansible-curl"
+    https://api.github.com/repos/kubernetes-sigs/kustomize/releases/latest
+  register: kustomize_latest_raw
+  changed_when: false
+  when: (tools.kustomize.version | default('') | string | length) == 0
 
-- name: Set kustomize version
+# 2) Calculer la version effective
+#    Les tags sont du style "kustomize/v5.4.2" → on retire "kustomize/" et "v"
+- name: "Kustomize | Compute effective version"
   ansible.builtin.set_fact:
-    kustomize_version: "{{ kustomize_latest.json.tag_name | regex_replace('^kustomize/', '') }}"
-  when: tools.kustomize.version == ""
+    kustomize_version: >-
+      {{
+        tools.kustomize.version
+        if (tools.kustomize.version | default('') | string | length) > 0
+        else (
+          (kustomize_latest_raw.stdout | from_json).tag_name
+          | regex_replace('^kustomize/', '')
+          | regex_replace('^v','')
+        )
+      }}
 
-- name: Use specified kustomize version
-  ansible.builtin.set_fact:
-    kustomize_version: "{{ tools.kustomize.version }}"
-  when: tools.kustomize.version != ""
-
-- name: Download kustomize
-  ansible.builtin.get_url:
-    url: "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F{{ kustomize_version }}/kustomize_{{ kustomize_version }}_linux_{{ tools.kustomize.arch }}.tar.gz"
-    dest: "/tmp/kustomize.tar.gz"
+# 3) Télécharger le tarball
+- name: "Kustomize | Download tarball"
+  ansible.builtin.command: >
+    curl -L --fail --show-error
+    -o /tmp/kustomize.tar.gz
+    "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F{{ kustomize_version }}/kustomize_{{ kustomize_version }}_linux_{{ tools.kustomize.arch | default(system_arch) }}.tar.gz"
+  args:
+    creates: /tmp/kustomize.tar.gz
   become: true
 
-- name: Install kustomize
+# 4) Installer
+- name: "Kustomize | Extract to {{ bin_path }}"
   ansible.builtin.unarchive:
     src: "/tmp/kustomize.tar.gz"
     dest: "{{ bin_path }}"
-    remote_src: yes
+    remote_src: true
   become: true

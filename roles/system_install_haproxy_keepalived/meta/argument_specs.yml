@@ -4,6 +4,22 @@ argument_specs:
     short_description: >
       Install and configure HAProxy + Keepalived for high availability (HA pair).
     options:
+      # ===== Global state =====
+      haproxy_keepalived_state:
+        type: str
+        choices: [present, absent]
+        default: present
+        description: >
+          Desired state of HAProxy+Keepalived on the host. 'present' installs and configures,
+          'absent' stops/disables services and removes configuration (and packages if purge=true).
+
+      haproxy_keepalived_purge:
+        type: bool
+        default: false
+        description: >
+          When state=absent, purge packages as well (removes package-owned config files).
+
+      # ===== HAProxy defaults =====
       haproxy_username:
         type: str
         default: haproxy
@@ -33,6 +49,7 @@ argument_specs:
         type: str
         default: dataplane
         description: User for HAProxy dataplane API
+
       masters:
         type: list
         elements: dict
@@ -43,6 +60,7 @@ argument_specs:
         elements: dict
         default: []
         description: List of Traefik backends (nodes)
+
       api_server_frontend_port:
         type: int
         default: 6443
@@ -51,6 +69,8 @@ argument_specs:
         type: int
         default: 9000
         description: Port for Traefik frontend
+
+      # ===== Keepalived defaults =====
       keepalived_interface:
         type: str
         required: true

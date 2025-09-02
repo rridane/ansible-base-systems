@@ -1,54 +1,122 @@
 ---
-- name: "HA pair | Install packages"
-  become: true
-  block:
-    - name: "Install HAProxy & Keepalived"
+# Assure un état explicite
+- name: "Assert state is present|absent"
+  ansible.builtin.assert:
+    that:
+      - haproxy_keepalived_state is defined
+      - haproxy_keepalived_state in ['present', 'absent']
+    fail_msg: "haproxy_keepalived_state must be 'present' or 'absent'"
+
+
+# ===========================
+# ==   STATE: PRESENT     ==
+# ===========================
+- block:
+    - name: "HA pair | Install packages"
+      become: true
+      block:
+        - name: "Install HAProxy & Keepalived"
+          ansible.builtin.apt:
+            name:
+              - haproxy
+              - keepalived
+            state: present
+            update_cache: true
+
+        - name: "Enable services at boot"
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+            enabled: true
+          loop:
+            - haproxy
+            - keepalived
+
+    - name: "HAProxy | Configure"
+      become: true
+      block:
+        - name: "Render haproxy.cfg"
+          ansible.builtin.template:
+            src: templates/haproxy.cfg
+            dest: /etc/haproxy/haproxy.cfg
+            owner: root
+            group: root
+            mode: "0644"
+          notify: "haproxy | validate & restart"
+
+    - name: "Keepalived | Configure"
+      become: true
+      block:
+        - name: "Render keepalived (lb1)"
+          ansible.builtin.template:
+            src: templates/keepalived_1.cfg
+            dest: /etc/keepalived/keepalived.conf
+            owner: root
+            group: root
+            mode: "0644"
+          when: inventory_hostname == "lb1"
+          notify: "keepalived | validate & restart"
+
+        - name: "Render keepalived (lb2)"
+          ansible.builtin.template:
+            src: templates/keepalived_2.cfg
+            dest: /etc/keepalived/keepalived.conf
+            owner: root
+            group: root
+            mode: "0644"
+          when: inventory_hostname == "lb2"
+          notify: "keepalived | validate & restart"
+  when: haproxy_keepalived_state == 'present'
+
+# ===========================
+# ==   STATE: ABSENT      ==
+# ===========================
+- block:
+    - name: "Stop & disable services"
+      become: true
+      block:
+        - name: "Stop services if running"
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+            state: stopped
+          loop:
+            - haproxy
+            - keepalived
+          failed_when: false   # si l’unité n’existe plus, ne pas planter
+
+        - name: "Disable services at boot"
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+            enabled: false
+          loop:
+            - haproxy
+            - keepalived
+          failed_when: false
+
+    - name: "Remove configuration files"
+      become: true
+      block:
+        - name: "Remove /etc/haproxy/haproxy.cfg"
+          ansible.builtin.file:
+            path: /etc/haproxy/haproxy.cfg
+            state: absent
+
+        - name: "Remove /etc/keepalived/keepalived.conf"
+          ansible.builtin.file:
+            path: /etc/keepalived/keepalived.conf
+            state: absent
+
+    - name: "Uninstall packages (remove or purge)"
+      become: true
       ansible.builtin.apt:
         name:
           - haproxy
           - keepalived
-        state: present
-        update_cache: true
+        state: absent
+        purge: "{{ (haproxy_keepalived_purge | default(false)) | bool }}"
+        autoremove: "{{ (haproxy_keepalived_purge | default(false)) | bool }}"
 
-    - name: "Enable services at boot"
+    - name: "Daemon reload after removal"
+      become: true
       ansible.builtin.systemd:
-        name: "{{ item }}"
-        enabled: true
-      loop:
-        - haproxy
-        - keepalived
-
-- name: "HAProxy | Configure"
-  become: true
-  block:
-    - name: "Render haproxy.cfg"
-      ansible.builtin.template:
-        src: templates/haproxy.cfg
-        dest: /etc/haproxy/haproxy.cfg
-        owner: root
-        group: root
-        mode: "0644"
-      notify: "haproxy | validate & restart"
-
-- name: "Keepalived | Configure"
-  become: true
-  block:
-    - name: "Render keepalived (lb1)"
-      ansible.builtin.template:
-        src: templates/keepalived_1.cfg
-        dest: /etc/keepalived/keepalived.conf
-        owner: root
-        group: root
-        mode: "0644"
-      when: inventory_hostname == "lb1"
-      notify: "keepalived | validate & restart"
-
-    - name: "Render keepalived (lb2)"
-      ansible.builtin.template:
-        src: templates/keepalived_2.cfg
-        dest: /etc/keepalived/keepalived.conf
-        owner: root
-        group: root
-        mode: "0644"
-      when: inventory_hostname == "lb2"
-      notify: "keepalived | validate & restart"
+        daemon_reload: true
+  when: haproxy_keepalived_state == 'absent'

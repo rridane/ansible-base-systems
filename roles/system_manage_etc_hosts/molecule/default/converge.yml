@@ -4,4 +4,4 @@
   become: true
   gather_facts: true
   roles:
-    - role: system-manage-etc-hosts
+    - role: system_manage_etc_hosts

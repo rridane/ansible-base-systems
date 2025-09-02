@@ -3,7 +3,7 @@ galaxy_info:
   role_name: system_k8s_cli_swissknife
   author: rridane
   description:
-    Bundle d’outils **CLI Kubernetes** (`kubectl`, `krew` + plugins, `k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye`) pour **Debian/Ubuntu**.
+    Bundle d’outils **CLI Kubernetes** (``krew` + plugins, `k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye`) pour **Debian/Ubuntu**.
   license: MIT
   namespace: rridane
   platforms:

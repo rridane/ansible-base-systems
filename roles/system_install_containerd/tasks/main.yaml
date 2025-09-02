@@ -26,6 +26,10 @@
         - "{{ containerd_registry_config_path }}"
         - /etc/systemd/system/containerd.service.d
 
+    - name: "systemd daemon-reload (after removals)"
+      ansible.builtin.systemd:
+        daemon_reload: true
+
 # ========================= PRESENT =========================
 - name: "Containerd | Install & configure"
   when: containerd_state == 'present'
@@ -48,12 +52,14 @@
         state: present
         update_cache: true
 
-    # Récupération de la clé ASCII
     - name: "Download Docker GPG key (ASCII armor)"
-      ansible.builtin.get_url:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        dest: /etc/apt/keyrings/docker.asc
-        mode: "0644"
+      ansible.builtin.command: >
+        curl -L --fail --show-error
+        -o /etc/apt/keyrings/docker.asc
+        https://download.docker.com/linux/ubuntu/gpg
+      args:
+        creates: /etc/apt/keyrings/docker.asc
+      become: yes
 
     # Dearmor -> .gpg (évite apt-key)
     - name: "Dearmor Docker key"
@@ -133,3 +139,36 @@
         name: containerd
         enabled: true
         state: started
+
+    - name: Ensure containerd drop-in dir exists
+      ansible.builtin.file:
+        path: "{{ containerd_proxy_dropin_path }}"
+        state: directory
+        mode: "0755"
+      become: true
+
+    # Écrit le drop-in si AU MOINS une variable est renseignée
+    - name: Write containerd proxy drop-in
+      ansible.builtin.template:
+        src: http-proxy.conf.j2
+        dest: "{{ containerd_proxy_dropin_path }}/{{ containerd_proxy_dropin_file }}"
+        mode: "0644"
+      when:
+        - (containerd_proxy_http  | length) > 0
+          or (containerd_proxy_https | length) > 0
+          or (containerd_no_proxy | length) > 0
+      notify: restart containerd
+      become: true
+
+    # Sinon, supprime le drop-in (désactivé = valeurs vides)
+    - name: Remove containerd proxy drop-in when everything is empty
+      ansible.builtin.file:
+        path: "{{ containerd_proxy_dropin_path }}/{{ containerd_proxy_dropin_file }}"
+        state: absent
+      when:
+        - (containerd_proxy_http  | length) == 0
+          and (containerd_proxy_https | length) == 0
+          and (containerd_no_proxy | length) == 0
+      notify: restart containerd
+      become: true
+

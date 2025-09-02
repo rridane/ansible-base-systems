@@ -1,39 +1,48 @@
 ---
-- name: Get helm latest version
-  ansible.builtin.uri:
-    url: "https://api.github.com/repos/helm/helm/releases/latest"
-    return_content: yes
-  register: helm_latest
-  when: tools.helm.version == ""
+# 1) Récupérer la dernière version si aucune n'est fournie
+- name: "Helm | Get latest release (curl) if version not specified"
+  ansible.builtin.command: >
+    curl -sL --fail --show-error
+    -H "Accept: application/vnd.github+json"
+    -H "User-Agent: ansible-curl"
+    https://api.github.com/repos/helm/helm/releases/latest
+  register: helm_latest_raw
+  changed_when: false
+  when: (tools.helm.version | default('') | string | length) == 0
 
-- name: Set helm version
+# 2) Calculer la version effective (on retire le 'v')
+- name: "Helm | Compute effective version"
   ansible.builtin.set_fact:
-    helm_version: "{{ helm_latest.json.tag_name | regex_replace('^v', '') }}"
-  when: tools.helm.version == ""
+    helm_version: >-
+      {{
+        tools.helm.version
+        if (tools.helm.version | default('') | string | length) > 0
+        else ((helm_latest_raw.stdout | from_json).tag_name | regex_replace('^v',''))
+      }}
 
-- name: Use specified helm version
-  ansible.builtin.set_fact:
-    helm_version: "{{ tools.helm.version }}"
-  when: tools.helm.version != ""
-
-- name: Download helm
-  ansible.builtin.get_url:
-    url: "https://get.helm.sh/helm-v{{ helm_version }}-linux-{{ tools.helm.arch }}.tar.gz"
-    dest: "/tmp/helm.tar.gz"
+# 3) Télécharger le tarball
+- name: "Helm | Download tarball"
+  ansible.builtin.command: >
+    curl -L --fail --show-error
+    -o /tmp/helm.tar.gz
+    "https://get.helm.sh/helm-v{{ helm_version }}-linux-{{ tools.helm.arch | default(system_arch) }}.tar.gz"
+  args:
+    creates: /tmp/helm.tar.gz
   become: true
 
-- name: Install helm
+# 4) Extraire le binaire dans /tmp (l'archive contient linux-amd64/helm)
+- name: "Helm | Extract tarball"
   ansible.builtin.unarchive:
     src: "/tmp/helm.tar.gz"
     dest: "/tmp"
-    remote_src: yes
-    extra_opts: ["--strip-components=1"]
+    remote_src: true
   become: true
 
-- name: Move helm binary
+# 5) Déplacer le binaire dans bin_path
+- name: "Helm | Move binary to {{ bin_path }}"
   ansible.builtin.copy:
-    src: "/tmp/helm"
+    src: "/tmp/linux-{{ tools.helm.arch | default(system_arch) }}/helm"
     dest: "{{ bin_path }}/helm"
     mode: "0755"
-    remote_src: yes
+    remote_src: true
   become: true
