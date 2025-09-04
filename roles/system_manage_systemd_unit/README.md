@@ -1,13 +1,13 @@
 # Ansible Role: rridane.base_systems.system_manage_systemd_unit
 
-Ce rôle permet de gérer des unités **systemd** de manière flexible : création, suppression, drop-ins, environment files,
-activation/désactivation et démarrage/redémarrage.
+This role manages **systemd units** flexibly: creation, deletion, drop-ins, environment files,
+enable/disable, and start/restart.
 
 ---
 
-## 🚀 Utilisation
+## 🚀 Usage
 
-`requirements.yml` :
+`requirements.yml`:
 
 ```yaml
 - name: rridane.base_systems.system_manage_systemd_unit
@@ -39,19 +39,19 @@ ansible-galaxy install -r requirements.yml
         unit_state: started
 ```
 
-### Fournir le contenu de l’unité (un seul mode)
+### Provide the unit content (only one mode)
 
-Le rôle accepte exactement **un** des trois modes suivants :
+The role accepts exactly **one** of the following three modes:
 
-| Variable            | Usage                                                                                             |
-|---------------------|---------------------------------------------------------------------------------------------------|
-| `unit_content`      | Contenu inline du unit file (idéal pour les petits services).                                     |
-| `unit_template_src` | Chemin d’un template Jinja2 (ex: `my.service.j2`) situé dans `templates/` du rôle ou du playbook. |
-| `unit_src_path`     | Chemin vers un fichier local prêt à copier (pas de templating).                                   |
+| Variable            | Usage                                                                                           |
+|---------------------|-------------------------------------------------------------------------------------------------|
+| `unit_content`      | Inline content of the unit file (ideal for small services).                                     |
+| `unit_template_src` | Path to a Jinja2 template (e.g. `my.service.j2`) located in the role or playbook `templates/`. |
+| `unit_src_path`     | Path to a local ready-to-copy file (no templating).                                            |
 
 ---
 
-#### Exemple 1 : Inline
+#### Example 1: Inline
 
 ```yaml
 - hosts: all
@@ -69,7 +69,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
           WantedBy=multi-user.target
 ```
 
-#### Exemple 2 : Template
+#### Example 2: Template
 
 ```yaml
 - hosts: all
@@ -82,7 +82,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
         my_port: 8080
 ```
 
-#### Exemple 3 : Fichier
+#### Example 3: File
 
 ```yaml
 - hosts: all
@@ -94,7 +94,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
         unit_src_path: files/myapp.service
 ```
 
-#### Exemple 4 : Unité système minimale
+#### Example 4: Minimal system unit
 
 ```yaml
 - hosts: all
@@ -120,7 +120,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
         unit_state: started
 ```
 
-#### Exemple 5 : Ne pas toucher à l'état, modifier uniquement le fichier
+#### Example 5: Do not touch state, only modify file
 
 ```yaml
 - hosts: all
@@ -136,11 +136,11 @@ Le rôle accepte exactement **un** des trois modes suivants :
           ExecStart=/usr/local/bin/myapp
           [Install]
           WantedBy=multi-user.target
-        unit_state: null          # <- aucune action systemctl
-        unit_enabled: true        # facultatif, ignoré si tu le souhaites
+        unit_state: null          # <- no systemctl action
+        unit_enabled: true        # optional, ignored if you want
 ```
 
-#### Exemple 6 : Full example - drop-in file + env_file + restart
+#### Example 6: Full example - drop-in file + env_file + restart
 
 ```yaml
 - hosts: all
@@ -175,7 +175,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
         unit_enabled: true
 ```
 
-#### Exemple 7 : clean
+#### Example 7: clean
 
 ```yaml
 - hosts: all

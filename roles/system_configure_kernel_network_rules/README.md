@@ -1,12 +1,12 @@
 # Ansible Role: rridane.base_systems.net_tuning
 
-Ce rôle applique une configuration réseau minimale pour **Kubernetes/containers** :
-- charge des **modules noyau** (ex. `overlay`, `br_netfilter`),
-- applique des **sysctl** (ex. `bridge-nf-call-iptables`, `ip_forward`),
-- gère les fichiers persistants `/etc/modules-load.d/*.conf` et `/etc/sysctl.d/*.conf`.
+This role applies minimal network configuration for **Kubernetes/containers**:
+- loads **kernel modules** (e.g. `overlay`, `br_netfilter`),
+- applies **sysctl** (e.g. `bridge-nf-call-iptables`, `ip_forward`),
+- manages persistent files `/etc/modules-load.d/*.conf` and `/etc/sysctl.d/*.conf`.
 
-Mode **present** ⇒ applique modules + sysctl.  
-Mode **absent** ⇒ retire modules + sysctl et **supprime** les fichiers `.conf`.
+Mode **present** ⇒ applies modules + sysctl.  
+Mode **absent** ⇒ removes modules + sysctl and **deletes** the `.conf` files.
 
 ---
 
@@ -16,45 +16,43 @@ Mode **absent** ⇒ retire modules + sysctl et **supprime** les fichiers `.conf`
 ansible-galaxy install rridane.base_systems.system_configure_kernel_network_rules
 ```
 
-ou via **requirements.yml**:
+or via **requirements.yml**:
 
 ```yaml
 - name: rridane.base_systems.system_configure_kernel_network_rules
-  version: ">=1.0.0" # à vérifier sur ansible-galaxy
+  version: ">=1.0.0" # to be checked on ansible-galaxy
 ```
-
-## Variables 
 
 ## ⚙️ Variables
 
-| Variable                         | Défaut                                   | Description                                                       |
-|----------------------------------|-------------------------------------------|-------------------------------------------------------------------|
-| net_tuning_state                 | present                                   | `present` pour appliquer, `absent` pour retirer et supprimer les `.conf` |
-| net_tuning_modules               | ['overlay','br_netfilter']                | Modules noyau à charger au boot (et à chaud si autorisé)          |
-| net_tuning_load_now              | true                                      | Charger les modules à chaud (désactivé auto en conteneur)         |
-| net_tuning_apply_sysctl_now      | true                                      | Appliquer les sysctl immédiatement (désactivé auto en conteneur)  |
-| net_tuning_sysctls               | voir ci-dessous                           | Clés sysctl à appliquer (dict `clé: valeur`)                      |
-| net_tuning_modules_conf_path     | /etc/modules-load.d/net-tuning.conf       | Fichier généré pour les modules persistants                       |
-| net_tuning_sysctl_conf_path      | /etc/sysctl.d/90-net-tuning.conf          | Fichier généré pour les sysctl persistants                        |
+| Variable                     | Default                                | Description |
+|------------------------------|----------------------------------------|-------------|
+| net_tuning_state             | present                                | `present` to apply, `absent` to remove and delete `.conf` |
+| net_tuning_modules           | ['overlay','br_netfilter']             | Kernel modules to load at boot (and hot-load if allowed) |
+| net_tuning_load_now          | true                                   | Load modules at runtime (auto-disabled in container) |
+| net_tuning_apply_sysctl_now  | true                                   | Apply sysctl immediately (auto-disabled in container) |
+| net_tuning_sysctls           | see below                              | Sysctl keys to apply (dict `key: value`) |
+| net_tuning_modules_conf_path | /etc/modules-load.d/net-tuning.conf    | Generated file for persistent modules |
+| net_tuning_sysctl_conf_path  | /etc/sysctl.d/90-net-tuning.conf       | Generated file for persistent sysctl |
 
-## 🧩 Ce que le rôle fait
+## 🧩 What the role does
 
-- Installe les dépendances système nécessaires (`kmod`, `procps`/`procps-ng`) **hors conteneurs**.
+- Installs required system dependencies (`kmod`, `procps`/`procps-ng`) **outside containers**.
 
 ### present
 
-- Charge les modules (si `net_tuning_load_now=true`).
-- Écrit `modules-load.d` avec la liste des modules.
-- Applique les sysctl (si `net_tuning_apply_sysctl_now=true`) **après** le chargement des modules.
-- Écrit `sysctl.d` pour la persistance.
+- Loads the modules (if `net_tuning_load_now=true`).
+- Writes `modules-load.d` with the list of modules.
+- Applies sysctl (if `net_tuning_apply_sysctl_now=true`) **after** loading modules.
+- Writes `sysctl.d` for persistence.
 
 ### absent
 
-- Retire les sysctl (*best effort*) et supprime le fichier `sysctl.d`.
-- Tente de décharger les modules (*best effort*).
-- Supprime le fichier `modules-load.d`.
+- Removes sysctl (*best effort*) and deletes the `sysctl.d` file.
+- Attempts to unload modules (*best effort*).
+- Deletes the `modules-load.d` file.
 
-## Installation packages simple
+## Simple package installation
 
 ```yaml
 - hosts: all
@@ -65,7 +63,7 @@ ou via **requirements.yml**:
         net_tuning_state: present
 ```
 
-## Personnaliser modules + sysctl
+## Customize modules + sysctl
 
 ```yaml
 - hosts: all
@@ -83,7 +81,7 @@ ou via **requirements.yml**:
           net.ipv4.conf.all.rp_filter: 0
 ```
 
-## Nettoyage
+## Cleanup
 
 ```yaml
 - hosts: all
@@ -92,25 +90,23 @@ ou via **requirements.yml**:
     - role: rridane.base_systems.system_configure_kernel_network_rules
       vars:
         net_tuning_state: absent
-
 ```
 
-## ✅ Effets attendus
+## ✅ Expected effects
 
-- Fichiers générés :
+- Generated files:
     - `/etc/modules-load.d/net-tuning.conf`
     - `/etc/sysctl.d/90-net-tuning.conf`
-- Modules `overlay` & `br_netfilter` disponibles (chargés si autorisé).
-- Sysctl appliqués **et** persistés.
+- Modules `overlay` & `br_netfilter` available (loaded if allowed).
+- Sysctl applied **and** persisted.
 
 ---
 
 ## 📝 Notes
 
-- Certains sysctl (ex. `net.bridge.*`) exigent **`br_netfilter`** : le rôle charge les modules **avant** d’appliquer les sysctl.
-- La décharge de modules en mode `absent` est *best effort* (échoue silencieusement s’ils sont encore utilisés).
-- Dépendances installées automatiquement (hors conteneurs) :
+- Some sysctl (e.g. `net.bridge.*`) require **`br_netfilter`**: the role loads modules **before** applying sysctl.
+- Unloading modules in `absent` mode is *best effort* (silently fails if still in use).
+- Dependencies automatically installed (outside containers):
     - Debian/Ubuntu/Alpine → `kmod`, `procps`
     - RedHat/CentOS/Rocky → `kmod`, `procps-ng`
-- Testé sur : Debian *bullseye/bookworm*, Ubuntu *focal/jammy/noble*.
-
+- Tested on: Debian *bullseye/bookworm*, Ubuntu *focal/jammy/noble*.

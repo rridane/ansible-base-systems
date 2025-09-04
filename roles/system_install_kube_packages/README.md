@@ -1,7 +1,7 @@
 # Ansible Role: rridane.base_systems.system_install_kube_packages
 
-Ce rôle gère l’installation ou la purge des paquets **Kubernetes** (`kubeadm`, `kubelet`, `kubectl`) sur Debian/Ubuntu.  
-Il utilise les dépôts officiels `pkgs.k8s.io` et prend en charge l’état **present/absent**.
+This role manages the installation or removal of **Kubernetes** packages (`kubeadm`, `kubelet`, `kubectl`) on Debian/Ubuntu.  
+It uses the official `pkgs.k8s.io` repositories and supports **present/absent** states.
 
 ---
 
@@ -13,24 +13,24 @@ ansible-galaxy install rridane.base_systems.system_install_kube_packages
 
 ## ⚙️ Variables
 
-| Variable        | Par défaut                          | Description                                                                 |
-|-----------------|--------------------------------------|-----------------------------------------------------------------------------|
-| kube_state      | present                             | `present` pour installer/mettre en place, `absent` pour purger/réinitialiser |
-| kube_version    | ""                                  | Version exacte (ex: `1.30.2-1.1`). Vide = dernière version dispo dans le repo |
-| kube_series     | v1.30                               | Série stable (`v1.29`, `v1.30`…) utilisée pour pkgs.k8s.io                   |
+| Variable     | Default   | Description |
+|--------------|-----------|-------------|
+| kube_state   | present   | `present` to install/setup, `absent` to purge/reset |
+| kube_version | ""        | Exact version (e.g. `1.30.2-1.1`). Empty = latest available in the repo |
+| kube_series  | v1.30     | Stable series (`v1.29`, `v1.30`…) used for pkgs.k8s.io |
 
 ---
 
-## 🧩 Ce que le rôle fait
+## 🧩 What the role does
 
-### present :
-- Ajoute le dépôt `pkgs.k8s.io/core:/stable:/<series>/deb/`.
-- Installe `kubeadm`, `kubelet`, `kubectl` (version pinée si `kube_version` défini).
+### present:
+- Adds the repository `pkgs.k8s.io/core:/stable:/<series>/deb/`.
+- Installs `kubeadm`, `kubelet`, `kubectl` (pinned version if `kube_version` defined).
 
-### absent :
-- Purge les paquets.
+### absent:
+- Purges the packages.
 
-## Exemple
+## Example
 
 ```yaml
 - hosts: all
@@ -44,7 +44,7 @@ ansible-galaxy install rridane.base_systems.system_install_kube_packages
 ```
 
 ```yaml
-# Désinstallation simple
+# Simple uninstallation
 - hosts: all
   become: true
   roles:

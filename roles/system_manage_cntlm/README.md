@@ -1,13 +1,13 @@
 # Ansible Role: rridane.base_systems.system_manage_cntlm
 
-Ce rôle installe et configure **CNTLM** (proxy NTLM/NTLMv2) depuis les sources, mais il ne créé par la configuration systemd, envisagez l'utilisation de **rridane.base_systems.system_manage_systemd_unit** si c'est un besoin. 
-Supporte les états **present/absent**.
+This role installs and configures **CNTLM** (NTLM/NTLMv2 proxy) from sources, but it does not create the systemd configuration. Consider using **rridane.base_systems.system_manage_systemd_unit** if that is required.  
+Supports **present/absent** states.
 
 ---
 
 ## 🚀 Installation
 
-`requirements.yml` :
+`requirements.yml`:
 
 ```yaml
 - name: rridane.base_systems.system_manage_cntlm
@@ -18,27 +18,27 @@ Supporte les états **present/absent**.
 ansible-galaxy install -r requirements.yml
 ```
 
-| Variable               | Par défaut                     | Description                                                                 |
-|------------------------|---------------------------------|-----------------------------------------------------------------------------|
-| cntlm_state            | present                         | `present` pour installer/configurer, `absent` pour supprimer                 |
-| cntlm_version          | "0.94.0"                        | Version CNTLM (si `cntlm_source_url` est vide, construit l’URL GitHub)       |
-| cntlm_source_url       | ""                              | URL du tarball source (prioritaire si renseignée)                            |
-| cntlm_source_checksum  | ""                              | Checksum (ex: sha256:…) pour sécuriser le téléchargement                     |
-| cntlm_build_dir        | /usr/local/src/cntlm            | Dossier de compilation                                                       |
-| cntlm_bin_path         | /usr/local/sbin/cntlm           | Chemin d’installation du binaire                                             |
-| cntlm_conf_path        | /etc/cntlm.conf                 | Chemin du fichier de configuration                                           |
-| cntlm_username         | ""                              | Nom d’utilisateur NTLM                                                       |
-| cntlm_domain           | ""                              | Domaine                                                                      |
-| cntlm_password         | ""                              | Mot de passe (**évitez**, préférez `cntlm_pass_ntlmv2` + Ansible Vault)      |
-| cntlm_pass_ntlmv2      | ""                              | Hash NTLMv2 (**recommandé**)                                                 |
-| cntlm_listen_host      | ""                              | Hôte d’écoute. Si vide, CNTLM utilisera `Listen <port>`                      |
-| cntlm_listen_port      | 3128                            | Port d’écoute                                                                |
-| cntlm_upstream_host    | 127.0.0.1                       | Hôte du proxy upstream (corporate)                                           |
-| cntlm_upstream_port    | 3128                            | Port upstream                                                                |
-| cntlm_no_proxy         | []                              | Liste de domaines/IP à exclure (convertie en lignes `NoProxy …`)             |
-| cntlm_extra_options    | []                              | Lignes additionnelles brutes (ex: `NTLMv2 on`)                               |
+| Variable              | Default                       | Description |
+|-----------------------|-------------------------------|-------------|
+| cntlm_state           | present                       | `present` to install/configure, `absent` to remove |
+| cntlm_version         | "0.94.0"                      | CNTLM version (if `cntlm_source_url` is empty, builds GitHub URL) |
+| cntlm_source_url      | ""                            | Source tarball URL (priority if provided) |
+| cntlm_source_checksum | ""                            | Checksum (e.g. sha256:…) to secure the download |
+| cntlm_build_dir       | /usr/local/src/cntlm          | Build directory |
+| cntlm_bin_path        | /usr/local/sbin/cntlm         | Binary installation path |
+| cntlm_conf_path       | /etc/cntlm.conf               | Configuration file path |
+| cntlm_username        | ""                            | NTLM username |
+| cntlm_domain          | ""                            | Domain |
+| cntlm_password        | ""                            | Password (**avoid**, prefer `cntlm_pass_ntlmv2` + Ansible Vault) |
+| cntlm_pass_ntlmv2     | ""                            | NTLMv2 hash (**recommended**) |
+| cntlm_listen_host     | ""                            | Listening host. If empty, CNTLM will use `Listen <port>` |
+| cntlm_listen_port     | 3128                          | Listening port |
+| cntlm_upstream_host   | 127.0.0.1                     | Upstream proxy host (corporate) |
+| cntlm_upstream_port   | 3128                          | Upstream port |
+| cntlm_no_proxy        | []                            | List of domains/IPs to exclude (converted into `NoProxy …` lines) |
+| cntlm_extra_options   | []                            | Additional raw lines (e.g. `NTLMv2 on`) |
 
-⚠ Fournissez exactement un des deux : **cntlm_password** ou **cntlm_pass_ntlmv2** (et **cntlm_username** requis).
+⚠ Provide exactly one of: **cntlm_password** or **cntlm_pass_ntlmv2** (and **cntlm_username** is required).
 
 ```yaml
 - hosts: all
@@ -49,7 +49,7 @@ ansible-galaxy install -r requirements.yml
         cntlm_version: "0.94.0"
         cntlm_username: "john.doe"
         cntlm_domain: "ACME"
-        # Préférez le hash NTLMv2 avec Ansible Vault :
+        # Prefer NTLMv2 hash with Ansible Vault:
         cntlm_pass_ntlmv2: "ABCD1234...EF"
         cntlm_upstream_host: "proxy.corp.local"
         cntlm_upstream_port: 8080

@@ -1,7 +1,7 @@
 # Ansible Role: rridane.base_systems.system_manage_etc_hosts
 
-Ce rôle gère un **bloc Ansible-managé** dans `/etc/hosts` pour ajouter/retirer des entrées de manière **idempotente**.  
-Il crée un bloc délimité par des marqueurs `# ANSIBLE-MANAGED <block_name> BEGIN/END`, y insère vos lignes, et peut le supprimer proprement.
+This role manages an **Ansible-managed block** in `/etc/hosts` to add/remove entries in an **idempotent** way.  
+It creates a block delimited by markers `# ANSIBLE-MANAGED <block_name> BEGIN/END`, inserts your lines, and can remove it cleanly.
 
 ---
 
@@ -15,41 +15,41 @@ Il crée un bloc délimité par des marqueurs `# ANSIBLE-MANAGED <block_name> BE
 
 ## ⚙️ Variables
 
-| Variable             | Défaut      | Description                                                     |
-|----------------------|-------------|-----------------------------------------------------------------|
-| etc_hosts_state      | present     | `present` pour créer/mettre à jour le bloc, `absent` pour le supprimer |
-| etc_hosts_block_name | etc-hosts   | Nom logique du bloc (utilisé dans les marqueurs BEGIN/END)      |
-| etc_hosts_backup     | true        | Sauvegarder `/etc/hosts` lors des modifications                 |
-| etc_hosts            | []          | Liste des entrées à écrire dans le bloc                         |
+| Variable             | Default     | Description |
+|----------------------|-------------|-------------|
+| etc_hosts_state      | present     | `present` to create/update the block, `absent` to remove it |
+| etc_hosts_block_name | etc-hosts   | Logical block name (used in BEGIN/END markers) |
+| etc_hosts_backup     | true        | Backup `/etc/hosts` when modified |
+| etc_hosts            | []          | List of entries to write in the block |
 
-## Structure des entrées etc_hosts
+## Structure of etc_hosts entries
 
 ```yaml
 etc_hosts:
   - ip: "10.0.0.10"
-    names: ["api.internal", "api"]   # alias affichés sur la même ligne
-    comment: "API server"            # (optionnel) commentaire en fin de ligne
+    names: ["api.internal", "api"]   # aliases shown on the same line
+    comment: "API server"            # (optional) comment at the end of the line
 ```
 
-## 💡 Format de rendu d’une ligne
+## 💡 Render format of a line
 `IP  <names...> [names]  # comment`
 
-## 🧩 Ce que le rôle fait
+## 🧩 What the role does
 
-- Si le bloc existe déjà, il **remplace** son contenu entre les marqueurs (regex sûre).
-- S’il n’existe pas, il **crée** les lignes :
+- If the block already exists, it **replaces** its content between markers (safe regex).
+- If it does not exist, it **creates** the lines:
   ```text
   # ANSIBLE-MANAGED <block_name> BEGIN
-  ...vos entrées générées...
+  ...your generated entries...
   # ANSIBLE-MANAGED <block_name> END
-    ```
-- state: absent → supprime proprement le bloc (les autres parties de /etc/hosts ne sont pas touchées).
+  ```
+- state: absent → cleanly removes the block (other parts of /etc/hosts are not touched).
 
-- En environnement conteneurisé, utilise des écritures non sûres (unsafe_writes) pour pallier certaines contraintes d’overlay.
+- In containerized environments, uses unsafe writes to bypass some overlay constraints.
 
-## Exemples
+## Examples
 
-### Créer un bloc
+### Create a block
 
 ```yaml
 - hosts: all
@@ -75,7 +75,7 @@ etc_hosts:
 # ANSIBLE-MANAGED k8s-lab END
 ```
 
-### Supprimer le bloc
+### Remove the block
 
 ```yaml
 - hosts: all
@@ -87,37 +87,32 @@ etc_hosts:
         etc_hosts_block_name: "k8s-lab"
 ```
 
-## ✅ Effets attendus
+## ✅ Expected effects
 
-Le fichier `/etc/hosts` contient un bloc délimité par : 
+The `/etc/hosts` file contains a block delimited by: 
 
 ```bash
 ANSIBLE-MANAGED <block_name> BEGIN
 ANSIBLE-MANAGED <block_name> END
 ```
 
-
-- Toutes les lignes définies dans `etc_hosts` sont présentes **entre** ces marqueurs.
-- En mode `absent`, ces deux marqueurs et le contenu intermédiaire **disparaissent**.
+- All lines defined in `etc_hosts` are present **between** these markers.
+- In `absent` mode, these two markers and the intermediate content **disappear**.
 
 ---
 
 ## 🧪 Tests (Molecule / Testinfra)
 
-- `/etc/hosts` existe et est un fichier.
-- Le bloc `BEGIN/END` utilisant `etc_hosts_block_name` est présent (ou absent si `state=absent`).
-- Les lignes construites à partir de `etc_hosts` sont trouvées dans le bloc.
-- Le rôle est **idempotent** : un second run ne produit **aucun changement**.
+- `/etc/hosts` exists and is a file.
+- The `BEGIN/END` block using `etc_hosts_block_name` is present (or absent if `state=absent`).
+- The lines built from `etc_hosts` are found in the block.
+- The role is **idempotent**: a second run produces **no change**.
 
 ---
 
 ## 📝 Notes
 
-- Le template utilisé pour les lignes est basé sur `hosts_block.j2`.
-- Seul le bloc managé est modifié ; le reste de `/etc/hosts` n’est pas touché.
-- `backup: true` par défaut : une sauvegarde de `/etc/hosts` est conservée avant modification.
-- Les écritures utilisent `unsafe_writes` en conteneur pour éviter des erreurs d’overlay fs.
-
-
-
-
+- The template used for lines is based on `hosts_block.j2`.
+- Only the managed block is modified; the rest of `/etc/hosts` is untouched.
+- `backup: true` by default: a backup of `/etc/hosts` is kept before modification.
+- Writes use `unsafe_writes` in container environments to avoid overlay fs errors.

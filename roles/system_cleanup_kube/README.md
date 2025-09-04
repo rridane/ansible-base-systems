@@ -1,29 +1,29 @@
 # Ansible Role: rridane.base_systems.system_cleanup_kube
 
-Rôle **destructif** pour nettoyer un nœud Kubernetes :
-- `kubeadm reset --force` (avec socket CRI),
-- purge des paquets (`kubeadm`, `kubelet`, `kubectl`) — optionnel,
-- suppression CNI (conf + interfaces) — optionnel,
-- nettoyage **Calico** (conf/binaires/état/iptables) — optionnel,
-- confirmation explicite requise.
+**Destructive** role to clean up a Kubernetes node:
+- `kubeadm reset --force` (with CRI socket),
+- purge packages (`kubeadm`, `kubelet`, `kubectl`) — optional,
+- remove CNI (config + interfaces) — optional,
+- clean up **Calico** (config/binaries/state/iptables) — optional,
+- explicit confirmation required.
 
 ---
 
-## ⚠️ Sécurité
+## ⚠️ Safety
 
-Par défaut, le rôle **demande confirmation** (`yes`) avant d’exécuter les opérations destructives.  
-En CI/non-interactif, désactive la pause et fournis l’ack :
+By default, the role **asks for confirmation** (`yes`) before executing destructive operations.  
+In CI/non-interactive mode, disable the pause and provide the ack:
 
 ```yaml
-# min exemple
+# minimal example
 kube_ask_confirmation: false
 kube_cleanup_ack: "yes"
 ```
 
 ```yaml
-# Full interactive exemple
+# Full interactive example
 # playbooks/kube_cleanup.yml
-- name: Clean a Kubernetes node (interactif)
+- name: Clean a Kubernetes node (interactive)
   hosts: mynode01
   become: true
   roles:
@@ -38,9 +38,9 @@ kube_cleanup_ack: "yes"
 ```
 
 ```yaml
-# Full non interactive exemple (CI) 
+# Full non-interactive example (CI) 
 # playbooks/kube_cleanup.yml
-- name: Clean a Kubernetes node (non-interactif)
+- name: Clean a Kubernetes node (non-interactive)
   hosts: mynode01
   become: true
   roles:
@@ -61,20 +61,20 @@ ansible-playbook -i inventory/hosts playbooks/kube_cleanup.yml
 
 ## Variables
 
-| Variable               | Défaut                                 | Description                                      |
-|------------------------|----------------------------------------|--------------------------------------------------|
-| kube_cleanup_enabled   | true                                   | Active/désactive le rôle                         |
-| kube_cri_socket        | /var/run/containerd/containerd.sock    | Socket CRI pour kubeadm reset                    |
-| kube_ask_confirmation  | true                                   | Demander la confirmation interactive             |
-| kube_cleanup_ack       | ""                                     | Token de confirmation pour CI                    |
-| kube_cleanup_ack_expected | "yes"                               | Token attendu                                    |
-| kube_cleanup_packages  | true                                   | Purge kubeadm, kubelet, kubectl                  |
-| kube_cleanup_cni       | true                                   | Supprime CNI (conf + interfaces)                 |
-| kube_cleanup_calico    | true                                   | Nettoie Calico (conf, bins, état, iptables)      |
+| Variable                  | Default                              | Description |
+|---------------------------|--------------------------------------|-------------|
+| kube_cleanup_enabled      | true                                 | Enables/disables the role |
+| kube_cri_socket           | /var/run/containerd/containerd.sock  | CRI socket for kubeadm reset |
+| kube_ask_confirmation     | true                                 | Ask for interactive confirmation |
+| kube_cleanup_ack          | ""                                   | Confirmation token for CI |
+| kube_cleanup_ack_expected | "yes"                                | Expected token |
+| kube_cleanup_packages     | true                                 | Purge kubeadm, kubelet, kubectl |
+| kube_cleanup_cni          | true                                 | Remove CNI (config + interfaces) |
+| kube_cleanup_calico       | true                                 | Clean Calico (config, bins, state, iptables) |
 
-## 🧹 Détails du nettoyage Calico (best effort)
+## 🧹 Calico Cleanup Details (best effort)
 
-- Supprime : `/etc/cni/net.d/10-calico.conflist`, `/opt/cni/bin/calico*`, `/var/lib/calico`, `/var/lib/cni/networks`.
-- Supprime interfaces : `tunl0`, `vxlan.calico`, `cali*`.
-- Vide/supprime chaînes iptables `cali-*` (filter/nat/mangle).
-- Tous les nettoyages sont **idempotents** et n’échouent pas si les éléments n’existent pas.
+- Removes: `/etc/cni/net.d/10-calico.conflist`, `/opt/cni/bin/calico*`, `/var/lib/calico`, `/var/lib/cni/networks`.
+- Removes interfaces: `tunl0`, `vxlan.calico`, `cali*`.
+- Flushes/deletes iptables chains `cali-*` (filter/nat/mangle).
+- All cleanup tasks are **idempotent** and will not fail if items do not exist.

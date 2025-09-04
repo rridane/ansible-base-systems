@@ -1,14 +1,14 @@
 # Ansible Role: rridane.base_systems.system_install_haproxy_keepalived
 
-Ce rôle installe et configure **HAProxy** (load balancer L4/L7) et **Keepalived** (VRRP pour IP virtuelle haute-disponibilité).  
-Il déploie les fichiers de configuration, active les services et vérifie leur bon fonctionnement.  
-Supporte les états **present/absent**.
+This role installs and configures **HAProxy** (L4/L7 load balancer) and **Keepalived** (VRRP for high-availability virtual IP).  
+It deploys configuration files, enables the services, and checks their proper operation.  
+Supports **present/absent** states.
 
 ---
 
 ## 🚀 Installation
 
-`requirements.yml` :
+`requirements.yml`:
 
 ```yaml
 - name: rridane.base_systems.system_install_haproxy_keepalived
@@ -19,52 +19,50 @@ Supporte les états **present/absent**.
 ansible-galaxy install -r requirements.yml
 ```
 
-## Variables
-
 ## ⚙️ Variables
 
-| Variable                   | Par défaut     | Description                                                   |
-|----------------------------|----------------|---------------------------------------------------------------|
-| haproxy_username           | haproxy        | Utilisateur sous lequel tourne HAProxy                        |
-| haproxy_groupname          | haproxy        | Groupe sous lequel tourne HAProxy                             |
-| haproxy_default_mode       | tcp            | Mode par défaut (`tcp` ou `http`)                             |
-| haproxy_frontend_stats_port| 8404           | Port d’écoute du frontend de statistiques                     |
-| api_server_frontend_port   | 6443           | Port frontend exposant le cluster Kubernetes (API server)     |
-| haproxy_extra_frontends    | []             | Liste de frontends supplémentaires                            |
-| haproxy_extra_backends     | []             | Liste de backends supplémentaires                             |
-| masters                    | []             | Liste des masters API Kubernetes (hostname, ip, port)         |
-| nodes                      | []             | Liste des nodes (hostname, ip, port) pour Traefik ou autres   |
-| keepalived_interface       | eth0           | Interface réseau utilisée par VRRP                            |
-| ha_vip                     | 192.168.0.100  | IP virtuelle haute-dispo gérée par Keepalived                 |
-| keepalived_priority_master | 101            | Priorité du nœud maître (plus haute = MASTER)                 |
-| keepalived_priority_backup | 100            | Priorité du nœud backup                                       |
-| keepalived_virtual_router_id | 100          | Identifiant VRRP partagé entre les nœuds                      |
+| Variable                     | Default        | Description |
+|------------------------------|----------------|-------------|
+| haproxy_username             | haproxy        | User under which HAProxy runs |
+| haproxy_groupname            | haproxy        | Group under which HAProxy runs |
+| haproxy_default_mode         | tcp            | Default mode (`tcp` or `http`) |
+| haproxy_frontend_stats_port  | 8404           | Listening port of the statistics frontend |
+| api_server_frontend_port     | 6443           | Frontend port exposing the Kubernetes cluster (API server) |
+| haproxy_extra_frontends      | []             | List of additional frontends |
+| haproxy_extra_backends       | []             | List of additional backends |
+| masters                      | []             | List of Kubernetes API masters (hostname, ip, port) |
+| nodes                        | []             | List of nodes (hostname, ip, port) for Traefik or others |
+| keepalived_interface         | eth0           | Network interface used by VRRP |
+| ha_vip                       | 192.168.0.100  | High-availability virtual IP managed by Keepalived |
+| keepalived_priority_master   | 101            | Priority of the master node (higher = MASTER) |
+| keepalived_priority_backup   | 100            | Priority of the backup node |
+| keepalived_virtual_router_id | 100            | VRRP identifier shared between nodes |
 
-## ✅ Effets
+## ✅ Effects
 
-- Service `haproxy` **enabled + running**.
-- Service `keepalived` **enabled + running**.
-- Config HAProxy déployée et validée.
-- Frontend API accessible sur `ha_vip:6443`.
-- Frontend stats + Prometheus exporter disponible sur `ha_vip:8404`.
-- IP virtuelle `ha_vip` flottante entre MASTER/BACKUP via VRRP.
+- `haproxy` service **enabled + running**.
+- `keepalived` service **enabled + running**.
+- HAProxy config deployed and validated.
+- API frontend accessible at `ha_vip:6443`.
+- Stats frontend + Prometheus exporter available at `ha_vip:8404`.
+- Floating `ha_vip` IP between MASTER/BACKUP via VRRP.
 
 ## 📝 Notes
 
-### Tests Molecule/Testinfra vérifient :
-- HAProxy service en marche et activé.
-- Fichier `/etc/haproxy/haproxy.cfg` existant et valide (`haproxy -c`).
-- Présence du socket admin `/run/haproxy/admin.sock`.
-- Frontends API/stats écoutent sur les bons ports.
-- Backends générés pour chaque master/node.
+### Molecule/Testinfra tests verify:
+- HAProxy service running and enabled.
+- `/etc/haproxy/haproxy.cfg` exists and is valid (`haproxy -c`).
+- Admin socket `/run/haproxy/admin.sock` present.
+- API/stats frontends listening on correct ports.
+- Backends generated for each master/node.
 
 ### Keepalived
-- Ajuste `priority` pour basculer entre MASTER et BACKUP.
+- Adjusts `priority` to switch between MASTER and BACKUP.
 
 ### Prometheus exporter
-- Exposé via la directive `http-request use-service prometheus-exporter`.
+- Exposed via the directive `http-request use-service prometheus-exporter`.
 
-### Exemple complet
+### Full example
 
 ```yaml
 - hosts: lb_nodes
@@ -92,7 +90,7 @@ ansible-galaxy install -r requirements.yml
 ```
 
 ```yaml
-# Clean haproxy keepalived + purge des confs
+# Clean haproxy keepalived + purge configs
 - hosts: lb_nodes
   become: true
   roles:

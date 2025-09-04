@@ -1,577 +1,0 @@
-# main.yml
----
-# present => applique modules + sysctl ; absent => retire modules + sysctl et supprime les fichiers .conf
-net_tuning_state: present
-
-# Modules noyau Ã  charger au boot et Ã  chaud
-net_tuning_modules:
-  - overlay
-  - br_netfilter
-
-# defaults/main.yml
-net_tuning_load_now: true
-net_tuning_apply_sysctl_now: true
-
-# RÃ¨gles sysctl Ã  appliquer (clÃ© => valeur)
-net_tuning_sysctls:
-  net.bridge.bridge-nf-call-ip6tables: 1
-  net.bridge.bridge-nf-call-iptables: 1
-  net.ipv4.ip_forward: 1
-
-# Fichiers gÃ©nÃ©rÃ©s
-net_tuning_modules_conf_path: "/etc/modules-load.d/net-tuning.conf"
-net_tuning_sysctl_conf_path:  "/etc/sysctl.d/90-net-tuning.conf"
-
-
-# main.yaml
----
-- name: "Deps | Ensure kmod/procps are installed"
-  become: true
-  ansible.builtin.package:
-    name: "{{ _net_tuning_pkgs }}"
-    state: present
-  vars:
-    _net_tuning_pkgs: >-
-      {{
-        (ansible_os_family == 'Debian') | ternary(['kmod','procps'],
-        (ansible_os_family == 'RedHat') | ternary(['kmod','procps-ng'],
-        (ansible_os_family == 'Alpine') | ternary(['kmod','procps'],
-        ['kmod','procps'] )))
-      }}
-  when: not (ansible_virtualization_type in ['docker','podman','lxc','container'])
-
-# tasks/main.yml (tout en haut)
-- name: "Facts | Auto-disable live actions in containers"
-  ansible.builtin.set_fact:
-    net_tuning_load_now: false
-    net_tuning_apply_sysctl_now: false
-  when: ansible_virtualization_type in ['docker','podman','lxc','container']
-
-# PRESENT
-- name: "Network tuning | Apply (present)"
-  when: net_tuning_state == 'present'
-  become: true
-  block:
-    - name: "Modules | Load required modules now"
-      community.general.modprobe:
-        name: "{{ item }}"
-        state: present
-      loop: "{{ net_tuning_modules | unique }}"
-      when: net_tuning_load_now
-
-    - name: "Modules | Ensure modules load at boot"
-      ansible.builtin.template:
-        src: modules.conf.j2
-        dest: "{{ net_tuning_modules_conf_path }}"
-        mode: "0644"
-
-    - name: "Sysctl | Apply rules"
-      ansible.posix.sysctl:
-        name: "{{ item.key }}"
-        value: "{{ item.value }}"
-        state: present
-        sysctl_set: true
-        reload: true
-        sysctl_file: "{{ net_tuning_sysctl_conf_path }}"
-      loop: "{{ net_tuning_sysctls | dict2items }}"
-      when: net_tuning_apply_sysctl_now
-      # Certains sysctl bridge nÃ©cessitent br_netfilter dÃ©jÃ  chargÃ© :
-      # On applique aprÃ¨s le modprobe ci-dessus, donc pas d'ignore_errors ici.
-
-# ABSENT
-- name: "Network tuning | Remove (absent)"
-  when: net_tuning_state == 'absent'
-  become: true
-  block:
-    - name: "Sysctl | Remove rules"
-      ansible.posix.sysctl:
-        name: "{{ item.key }}"
-        state: absent
-        reload: true
-        sysctl_file: "{{ net_tuning_sysctl_conf_path }}"
-      loop: "{{ net_tuning_sysctls | dict2items }}"
-      failed_when: false  # au cas oÃ¹ la rÃ¨gle n'existe pas dÃ©jÃ 
-
-    - name: "Sysctl | Remove conf file"
-      ansible.builtin.file:
-        path: "{{ net_tuning_sysctl_conf_path }}"
-        state: absent
-
-    - name: "Modules | Try to unload now (best effort)"
-      community.general.modprobe:
-        name: "{{ item }}"
-        state: absent
-      loop: "{{ net_tuning_modules | reverse | list }}"
-      failed_when: false   # ne pas Ã©chouer si un module est encore utilisÃ©
-
-    - name: "Modules | Remove boot conf"
-      ansible.builtin.file:
-        path: "{{ net_tuning_modules_conf_path }}"
-        state: absent
-
-# kernel_modules.conf
-{% for m in net_tuning_modules | unique -%}
-{{ m }}
-{% endfor -%}
-
-# modules.conf.j2
-# {{ net_tuning_header | default('Managed by Ansible (net-tuning role)') }}
-{% for m in (net_tuning_modules | unique) -%}
-    {{ m }}
-{% endfor -%}
-
-# argument_specs.yml
----
-argument_specs:
-  main:
-    short_description: "Charge/DÃ©charge les modules noyau rÃ©seau et applique/retire les sysctl associÃ©s."
-    options:
-      net_tuning_state:
-        type: str
-        choices: [present, absent]
-        default: present
-        description:
-          - "present => applique modules + sysctl"
-          - "absent  => retire modules + sysctl et supprime les fichiers .conf"
-      net_tuning_modules:
-        type: list
-        elements: str
-        default:
-          - overlay
-          - br_netfilter
-        description:
-          - "Modules noyau Ã  charger au boot et Ã  chaud."
-      net_tuning_sysctls:
-        type: dict
-        default:
-          net.bridge.bridge-nf-call-ip6tables: 1
-          net.bridge.bridge-nf-call-iptables: 1
-          net.ipv4.ip_forward: 1
-        description:
-          - "ClÃ©s sysctl Ã  appliquer (clÃ© => valeur)."
-      net_tuning_modules_conf_path:
-        type: str
-        default: "/etc/modules-load.d/net-tuning.conf"
-        description:
-          - "Chemin du fichier modules-load.d gÃ©nÃ©rÃ©."
-      net_tuning_sysctl_conf_path:
-        type: str
-        default: "/etc/sysctl.d/90-net-tuning.conf"
-        description:
-          - "Chemin du fichier sysctl.d gÃ©nÃ©rÃ©."
-
-# main.yml
----
-galaxy_info:
-  role_name: system_configure_kernel_network_rules
-  author: rridane
-  description: >
-    Applique une configuration rÃ©seau minimale pour Kubernetes/containers :
-    charge les modules overlay et br_netfilter, et configure les sysctl
-    (bridge-nf-call-iptables/ip6tables, ip_forward). En mode absent,
-    retire les rÃ©glages et supprime les fichiers .conf gÃ©nÃ©rÃ©s.
-  license: MIT
-  min_ansible_version: "2.14"
-
-  platforms:
-    - name: Debian
-      versions: [ bullseye, bookworm ]
-    - name: Ubuntu
-      versions: [ focal, jammy, noble ]
-
-  galaxy_tags:
-    - networking
-    - sysctl
-    - kernel
-    - kubernetes
-    - containers
-
-dependencies: [ ]
-
-# converge.yml
----
-- name: Converge
-  hosts: all
-  roles:
-    - role: system_configure_kernel_network_rules
-
-# test_default.py
-import pytest
-
-def test_modules_conf_file(host):
-    """VÃ©rifie que le fichier de configuration des modules existe"""
-    conf_file = host.file("/etc/modules-load.d/net-tuning.conf")
-    assert conf_file.exists
-    assert conf_file.is_file
-    assert conf_file.user == "root"
-    assert conf_file.group == "root"
-    assert conf_file.mode == 0o644
-
-def test_modules_conf_content(host):
-    """VÃ©rifie le contenu du fichier de configuration des modules"""
-    conf_file = host.file("/etc/modules-load.d/net-tuning.conf")
-    content = conf_file.content_string
-
-    # VÃ©rifie que tous les modules requis sont prÃ©sents
-    assert "overlay" in content
-    assert "br_netfilter" in content
-
-    # VÃ©rifie le format (un module par ligne)
-    lines = [line.strip() for line in content.split('\n') if line.strip()]
-    assert "overlay" in lines
-    assert "br_netfilter" in lines
-
-def test_sysctl_conf_file(host):
-    """VÃ©rifie que le fichier de configuration sysctl existe"""
-    conf_file = host.file("/etc/sysctl.d/90-net-tuning.conf")
-    assert conf_file.exists
-    assert conf_file.is_file
-    assert conf_file.user == "root"
-    assert conf_file.group == "root"
-    assert conf_file.mode == 0o644
-
-def test_sysctl_conf_content(host):
-    """VÃ©rifie le contenu du fichier de configuration sysctl"""
-    conf_file = host.file("/etc/sysctl.d/90-net-tuning.conf")
-    content = conf_file.content_string
-
-    # VÃ©rifie que tous les paramÃ¨tres sysctl sont prÃ©sents
-    assert "net.bridge.bridge-nf-call-ip6tables = 1" in content
-    assert "net.bridge.bridge-nf-call-iptables = 1" in content
-    assert "net.ipv4.ip_forward = 1" in content
-
-def test_modules_loaded(host):
-    """VÃ©rifie que les modules requis sont chargÃ©s"""
-    # VÃ©rification basique que les modules sont prÃ©sents
-    # (Dans un conteneur, ils peuvent Ãªtre compilÃ©s dans le noyau plutÃ´t que chargÃ©s)
-    for module in ["overlay", "br_netfilter"]:
-        # VÃ©rifie si le module est listÃ© dans /proc/modules ou compilÃ©
-        result = host.run(f"grep -q \"^{module}\" /proc/modules || true")
-        # MÃªme si le module n'est pas chargÃ©, le test ne doit pas Ã©chouer
-        # car il pourrait Ãªtre compilÃ© dans le noyau
-
-def test_sysctl_values_applied(host):
-    """VÃ©rifie que les valeurs sysctl ont Ã©tÃ© appliquÃ©es"""
-    # VÃ©rifie les valeurs sysctl actuelles
-    for param, expected_value in [
-        ("net.bridge.bridge-nf-call-ip6tables", "1"),
-        ("net.bridge.bridge-nf-call-iptables", "1"),
-        ("net.ipv4.ip_forward", "1")
-    ]:
-        # Certains paramÃ¨tres peuvent ne pas exister si les modules ne sont pas chargÃ©s
-        result = host.run(f"sysctl -n {param} 2>/dev/null || echo 'not_present'")
-        if result.stdout.strip() != "not_present":
-            assert result.stdout.strip() == expected_value
-# test_default.cpython-311-pytest-8.4.1.pyc
-§
-    âI±h  ã                   óL   — d dl Zd dlmc mZ d dlZd„ Zd„ Zd„ Z	d„ Z
-d„ Zd„ ZdS )é    Nc                 óÂ  — |                       d¦  «        }|j        }|sxddt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        dœz  }t          t	          j        |¦  «        ¦  «        ‚d}|j	        }|sxddt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        dœz  }t          t	          j        |¦  «        ¦  «        ‚d}|j
-        }d}||k    }|sªt	          j        d|fd	||f¦  «        dt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        t	          j        |¦  «        d
-œz  }dd|iz  }t          t	          j        |¦  «        ¦  «        ‚dx}x}}|j        }d}||k    }|sªt	          j        d|fd||f¦  «        dt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        t	          j        |¦  «        d
-œz  }dd|iz  }t          t	          j        |¦  «        ¦  «        ‚dx}x}}|j        }d}||k    }|sªt	          j        d|fd||f¦  «        dt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        t	          j        |¦  «        d
-œz  }dd|iz  }t          t	          j        |¦  «        ¦  «        ‚dx}x}}dS )u;   VÃ©rifie que le fichier de configuration des modules existeú#/etc/modules-load.d/net-tuning.confú*assert %(py2)s
-{%(py2)s = %(py0)s.exists
-}Ú	conf_file©Úpy0Úpy2Nú+assert %(py2)s
-{%(py2)s = %(py0)s.is_file
-}Úroot©ú==©z,%(py2)s
-{%(py2)s = %(py0)s.user
-} == %(py5)s©r   r	   Úpy5úassert %(py7)sÚpy7©z-%(py2)s
-{%(py2)s = %(py0)s.group
-} == %(py5)sé¤  ©z,%(py2)s
-{%(py2)s = %(py0)s.mode
-} == %(py5)s©ÚfileÚexistsÚ@py_builtinsÚlocalsÚ
-@pytest_arÚ_should_repr_global_nameÚ	_safereprÚAssertionErrorÚ_format_explanationÚis_fileÚuserÚ_call_reprcompareÚgroupÚmode©Úhostr   Ú@py_assert1Ú@py_format3Ú@py_assert4Ú@py_assert3Ú@py_format6Ú@py_format8s           ú˜/home/dd/Projects/perso/ansible-useful-ressources/ansible-base-system/roles/system_configure_kernel_network_rules/molecule/default/tests/test_default.pyÚtest_modules_conf_filer.      sÁ  € à—	’	Ğ?Ñ@Ô@€IØÔĞĞĞĞĞÕÔÑÔĞĞÕÔˆ9ÑÔĞÕÔˆ9ÑÔĞĞÕÔĞÑÔĞĞÑĞÕÕÔĞÑÔÑÔĞĞĞØÔĞĞĞĞĞÕÔÑÔĞĞÕÔˆ9ÑÔĞÕÔˆ9ÑÔĞĞÕÔĞÑÔĞĞÑĞÕÕÔĞÑÔÑÔĞĞĞØŒ>Ğ#˜VĞ#ˆ>˜VÒ#Ğ#Ğ#Ğ#Õ#Ô#Ğ#Ğ#Ğ#Ğ#ˆ>˜VĞ#Ñ#Ô#Ğ#Õ#Ô#Ñ#Ô#Ğ#Ğ#Õ#Ô#ˆ9Ñ#Ô#Ğ#Õ#Ô#ˆ9Ñ#Ô#Ğ#Ğ#Õ#Ô#ˆ>Ñ#Ô#Õ#Ô#˜VÑ#Ô#Ğ#Ğ#Ñ#Ğ#Ğ#Ğ#Ğ#Ğ#Ñ#Ğ#Õ#Õ#Ô#Ğ#Ñ#Ô#Ñ#Ô#Ğ#Ğ#Ğ#Ğ#Ğ#Ğ#Ğ#ØŒ?Ğ$˜fĞ$ˆ?˜fÒ$Ğ$Ğ$Ğ$Õ$Ô$Ğ$Ğ$Ğ$Ğ$ˆ?˜fĞ$Ñ$Ô$Ğ$Õ$Ô$Ñ$Ô$Ğ$Ğ$Õ$Ô$ˆ9Ñ$Ô$Ğ$Õ$Ô$ˆ9Ñ$Ô$Ğ$Ğ$Õ$Ô$ˆ?Ñ$Ô$Õ$Ô$˜fÑ$Ô$Ğ$Ğ$Ñ$Ğ$Ğ$Ğ$Ğ$Ğ$Ñ$Ğ$Õ$Õ$Ô$Ğ$Ñ$Ô$Ñ$Ô$Ğ$Ğ$Ğ$Ğ$Ğ$Ğ$Ğ$ØŒ>Ğ"˜UĞ"ˆ>˜UÒ"Ğ"Ğ"Ğ"Õ"Ô"Ğ"Ğ"Ğ"Ğ"ˆ>˜UĞ"Ñ"Ô"Ğ"Õ"Ô"Ñ"Ô"Ğ"Ğ"Õ"Ô"ˆ9Ñ"Ô"Ğ"Õ"Ô"ˆ9Ñ"Ô"Ğ"Ğ"Õ"Ô"ˆ>Ñ"Ô"Õ"Ô"˜UÑ"Ô"Ğ"Ğ"Ñ"Ğ"Ğ"Ğ"Ğ"Ğ"Ñ"Ğ"Õ"Õ"Ô"Ğ"Ñ"Ô"Ñ"Ô"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"ó    c                 ó”  — |                       d¦  «        }|j        }d}||v }|s—t          j        d|fd||f¦  «        t          j        |¦  «        dt          j        ¦   «         v st          j        |¦  «        rt          j        |¦  «        nddœz  }dd|iz  }t          t          j	        |¦  «        ¦  «        ‚d	x}}d
-}||v }|s—t          j        d|fd||f¦  «        t          j        |¦  «        dt          j        ¦   «         v st          j        |¦  «        rt          j        |¦  «        nddœz  }dd|iz  }t          t          j	        |¦  «        ¦  «        ‚d	x}}d„ | 
-                    d¦  «        D ¦   «         }d}||v }|s—t          j        d|fd||f¦  «        t          j        |¦  «        dt          j        ¦   «         v st          j        |¦  «        rt          j        |¦  «        nddœz  }dd|iz  }t          t          j	        |¦  «        ¦  «        ‚d	x}}d
-}||v }|s—t          j        d|fd||f¦  «        t          j        |¦  «        dt          j        ¦   «         v st          j        |¦  «        rt          j        |¦  «        nddœz  }dd|iz  }t          t          j	        |¦  «        ¦  «        ‚d	x}}d	S )u;   VÃ©rifie le contenu du fichier de configuration des modulesr   Úoverlay©Úin©z%(py1)s in %(py3)sÚcontent©Úpy1Úpy3úassert %(py5)sr   NÚbr_netfilterc                 ó^   — g | ]*}|                      ¦   «         ¯|                      ¦   «         ‘Œ+S © )Ústrip)Ú.0Úlines     r-   ú
-<listcomp>z-test_modules_conf_content.<locals>.<listcomp>   s-   € ĞJĞJĞJ˜d¸T¿ZºZ¹\¼\ĞJˆTZŠZ‰\Œ\ĞJĞJĞJr/   Ú
-Úlines)r   Úcontent_stringr   r"   r   r   r   r   r   r   Úsplit)r&   r   r5   Ú@py_assert0Ú@py_assert2Ú@py_format4r+   rB   s           r-   Útest_modules_conf_contentrH      sN  € à—	’	Ğ?Ñ@Ô@€IØÔ&€Gğ Ğˆ9˜ĞĞĞĞÕÔĞĞĞĞˆ9˜ĞÑÔÕÔˆ9ÑÔĞÕÔÑÔĞĞÕÔ˜ÑÔĞÕÔ˜ÑÔĞĞĞĞÑĞĞĞĞĞÑĞÕÕÔĞÑÔÑÔĞĞĞĞĞØĞ$ˆ>˜WĞ$Ğ$Ğ$Ğ$Õ$Ô$Ğ$Ğ$Ğ$Ğ$ˆ>˜WĞ$Ñ$Ô$Õ$Ô$ˆ>Ñ$Ô$Ğ$Õ$Ô$Ñ$Ô$Ğ$Ğ$Õ$Ô$˜WÑ$Ô$Ğ$Õ$Ô$˜WÑ$Ô$Ğ$Ğ$Ğ$Ğ$Ñ$Ğ$Ğ$Ğ$Ğ$Ğ$Ñ$Ğ$Õ$Õ$Ô$Ğ$Ñ$Ô$Ñ$Ô$Ğ$Ğ$Ğ$Ğ$Ğ$ğ KĞJ g§m¢m°DÑ&9Ô&9ĞJÑJÔJ€EØĞˆ9˜ĞĞĞĞÕÔĞĞĞĞˆ9˜ĞÑÔÕÔˆ9ÑÔĞÕÔÑÔĞĞÕÔ˜ÑÔĞÕÔ˜ÑÔĞĞĞĞÑĞĞĞĞĞÑĞÕÕÔĞÑÔÑÔĞĞĞĞĞØĞ"ˆ>˜UĞ"Ğ"Ğ"Ğ"Õ"Ô"Ğ"Ğ"Ğ"Ğ"ˆ>˜UĞ"Ñ"Ô"Õ"Ô"ˆ>Ñ"Ô"Ğ"Õ"Ô"Ñ"Ô"Ğ"Ğ"Õ"Ô"˜UÑ"Ô"Ğ"Õ"Ô"˜UÑ"Ô"Ğ"Ğ"Ğ"Ğ"Ñ"Ğ"Ğ"Ğ"Ğ"Ğ"Ñ"Ğ"Õ"Õ"Ô"Ğ"Ñ"Ô"Ñ"Ô"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"r/   c                 óÂ  — |                       d¦  «        }|j        }|sxddt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        dœz  }t          t	          j        |¦  «        ¦  «        ‚d}|j	        }|sxddt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        dœz  }t          t	          j        |¦  «        ¦  «        ‚d}|j
-        }d}||k    }|sªt	          j        d|fd	||f¦  «        dt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        t	          j        |¦  «        d
-œz  }dd|iz  }t          t	          j        |¦  «        ¦  «        ‚dx}x}}|j        }d}||k    }|sªt	          j        d|fd||f¦  «        dt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        t	          j        |¦  «        d
-œz  }dd|iz  }t          t	          j        |¦  «        ¦  «        ‚dx}x}}|j        }d}||k    }|sªt	          j        d|fd||f¦  «        dt          j        ¦   «         v st	          j        |¦  «        rt	          j        |¦  «        ndt	          j        |¦  «        t	          j        |¦  «        d
-œz  }dd|iz  }t          t	          j        |¦  «        ¦  «        ‚dx}x}}dS )u6   VÃ©rifie que le fichier de configuration sysctl existeú /etc/sysctl.d/90-net-tuning.confr   r   r   Nr
-   r   r   r   r   r   r   r   r   r   r   r%   s           r-   Útest_sysctl_conf_filerK      sÁ  € à—	’	Ğ<Ñ=Ô=€IØÔĞĞĞĞĞÕÔÑÔĞĞÕÔˆ9ÑÔĞÕÔˆ9ÑÔĞĞÕÔĞÑÔĞĞÑĞÕÕÔĞÑÔÑÔĞĞĞØÔĞĞĞĞĞÕÔÑÔĞĞÕÔˆ9ÑÔĞÕÔˆ9ÑÔĞĞÕÔĞÑÔĞĞÑĞÕÕÔĞÑÔÑÔĞĞĞØŒ>Ğ#˜VĞ#ˆ>˜VÒ#Ğ#Ğ#Ğ#Õ#Ô#Ğ#Ğ#Ğ#Ğ#ˆ>˜VĞ#Ñ#Ô#Ğ#Õ#Ô#Ñ#Ô#Ğ#Ğ#Õ#Ô#ˆ9Ñ#Ô#Ğ#Õ#Ô#ˆ9Ñ#Ô#Ğ#Ğ#Õ#Ô#ˆ>Ñ#Ô#Õ#Ô#˜VÑ#Ô#Ğ#Ğ#Ñ#Ğ#Ğ#Ğ#Ğ#Ğ#Ñ#Ğ#Õ#Õ#Ô#Ğ#Ñ#Ô#Ñ#Ô#Ğ#Ğ#Ğ#Ğ#Ğ#Ğ#Ğ#ØŒ?Ğ$˜fĞ$ˆ?˜fÒ$Ğ$Ğ$Ğ$Õ$Ô$Ğ$Ğ$Ğ$Ğ$ˆ?˜fĞ$Ñ$Ô$Ğ$Õ$Ô$Ñ$Ô$Ğ$Ğ$Õ$Ô$ˆ9Ñ$Ô$Ğ$Õ$Ô$ˆ9Ñ$Ô$Ğ$Ğ$Õ$Ô$ˆ?Ñ$Ô$Õ$Ô$˜fÑ$Ô$Ğ$Ğ$Ñ$Ğ$Ğ$Ğ$Ğ$Ğ$Ñ$Ğ$Õ$Õ$Ô$Ğ$Ñ$Ô$Ñ$Ô$Ğ$Ğ$Ğ$Ğ$Ğ$Ğ$Ğ$ØŒ>Ğ"˜UĞ"ˆ>˜UÒ"Ğ"Ğ"Ğ"Õ"Ô"Ğ"Ğ"Ğ"Ğ"ˆ>˜UĞ"Ñ"Ô"Ğ"Õ"Ô"Ñ"Ô"Ğ"Ğ"Õ"Ô"ˆ9Ñ"Ô"Ğ"Õ"Ô"ˆ9Ñ"Ô"Ğ"Ğ"Õ"Ô"ˆ>Ñ"Ô"Õ"Ô"˜UÑ"Ô"Ğ"Ğ"Ñ"Ğ"Ğ"Ğ"Ğ"Ğ"Ñ"Ğ"Õ"Õ"Ô"Ğ"Ñ"Ô"Ñ"Ô"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"Ğ"r/   c                 ó  — |                       d¦  «        }|j        }d}||v }|s—t          j        d|fd||f¦  «        t          j        |¦  «        dt          j        ¦   «         v st          j        |¦  «        rt          j        |¦  «        nddœz  }dd|iz  }t          t          j	        |¦  «        ¦  «        ‚d	x}}d
-}||v }|s—t          j        d|fd||f¦  «        t          j        |¦  «        dt          j        ¦   «         v st          j        |¦  «        rt          j        |¦  «        nddœz  }dd|iz  }t          t          j	        |¦  «        ¦  «        ‚d	x}}d}||v }|s—t          j        d|fd||f¦  «        t          j        |¦  «        dt          j        ¦   «         v st          j        |¦  «        rt          j        |¦  «        nddœz  }dd|iz  }t          t          j	        |¦  «        ¦  «        ‚d	x}}d	S )u6   VÃ©rifie le contenu du fichier de configuration sysctlrJ   z'net.bridge.bridge-nf-call-ip6tables = 1r2   r4   r5   r6   r9   r   Nz&net.bridge.bridge-nf-call-iptables = 1znet.ipv4.ip_forward = 1)
-r   rC   r   r"   r   r   r   r   r   r   )r&   r   r5   rE   rF   rG   r+   s          r-   Útest_sysctl_conf_contentrM   #   ss  € à—	’	Ğ<Ñ=Ô=€IØÔ&€Gğ 5Ğ?Ğ4¸Ğ?Ğ?Ğ?Ğ?Õ?Ô?Ğ?Ğ?Ğ?Ğ?Ğ4¸Ğ?Ñ?Ô?Õ?Ô?Ğ4Ñ?Ô?Ğ?Õ?Ô?Ñ?Ô?Ğ?Ğ?Õ?Ô?¸Ñ?Ô?Ğ?Õ?Ô?¸Ñ?Ô?Ğ?Ğ?Ğ?Ğ?Ñ?Ğ?Ğ?Ğ?Ğ?Ğ?Ñ?Ğ?Õ?Õ?Ô?Ğ?Ñ?Ô?Ñ?Ô?Ğ?Ğ?Ğ?Ğ?Ğ?Ø3Ğ>Ğ3°wĞ>Ğ>Ğ>Ğ>Õ>Ô>Ğ>Ğ>Ğ>Ğ>Ğ3°wĞ>Ñ>Ô>Õ>Ô>Ğ3Ñ>Ô>Ğ>Õ>Ô>Ñ>Ô>Ğ>Ğ>Õ>Ô>°wÑ>Ô>Ğ>Õ>Ô>°wÑ>Ô>Ğ>Ğ>Ğ>Ğ>Ñ>Ğ>Ğ>Ğ>Ğ>Ğ>Ñ>Ğ>Õ>Õ>Ô>Ğ>Ñ>Ô>Ñ>Ô>Ğ>Ğ>Ğ>Ğ>Ğ>Ø$Ğ/Ğ$¨Ğ/Ğ/Ğ/Ğ/Õ/Ô/Ğ/Ğ/Ğ/Ğ/Ğ$¨Ğ/Ñ/Ô/Õ/Ô/Ğ$Ñ/Ô/Ğ/Õ/Ô/Ñ/Ô/Ğ/Ğ/Õ/Ô/¨Ñ/Ô/Ğ/Õ/Ô/¨Ñ/Ô/Ğ/Ğ/Ğ/Ğ/Ñ/Ğ/Ğ/Ğ/Ğ/Ğ/Ñ/Ğ/Õ/Õ/Ô/Ğ/Ñ/Ô/Ñ/Ô/Ğ/Ğ/Ğ/Ğ/Ğ/Ğ/Ğ/r/   c                 óB   — dD ]}|                       d|› d¦  «        }ŒdS )u-   VÃ©rifie que les modules requis sont chargÃ©s)r1   r:   z
-grep -q "^z" /proc/modules || trueN)Úrun)r&   ÚmoduleÚresults      r-   Útest_modules_loadedrR   -   s@   € ğ .ğ Jğ Jˆà—’ĞH¨ĞHĞHĞHÑIÔIˆˆğJğ Jr/   c           	      óÎ  — dD ]`\  }}|                       d|› d¦  «        }|j                             ¦   «         dk    r#|j        }|j        } |¦   «         }||k    }|sût          j        d|fd||f¦  «        dt          j        ¦   «         v st          j        |¦  «        rt          j        |¦  «        ndt          j        |¦  «        t          j        |¦  «        t          j        |¦  «        dt          j        ¦   «         v st          j        |¦  «        rt          j        |¦  «        ndd	œz  }d
-d|iz  }	t          t          j
-        |	¦  «        ¦  «        ‚dx}x}x}}ŒbdS )u5   VÃ©rifie que les valeurs sysctl ont Ã©tÃ© appliquÃ©es))z#net.bridge.bridge-nf-call-ip6tablesÚ1)z"net.bridge.bridge-nf-call-iptablesrT   )znet.ipv4.ip_forwardrT   z
-sysctl -n z" 2>/dev/null || echo 'not_present'Únot_presentr   )z`%(py6)s
-{%(py6)s = %(py4)s
-{%(py4)s = %(py2)s
-{%(py2)s = %(py0)s.stdout
-}.strip
-}()
-} == %(py8)srQ   Úexpected_value)r   r	   Úpy4Úpy6Úpy8zassert %(py10)sÚpy10N)rO   Ústdoutr=   r   r"   r   r   r   r   r   r   )
-r&   ÚparamrV   rQ   r'   r*   Ú@py_assert5Ú@py_assert7Ú@py_format9Ú@py_format11s
-             r-   Útest_sysctl_values_appliedra   7   sœ  € ğ"ğ ;ñ ;Ñˆˆ~ğ —’ĞP uĞPĞPĞPÑQÔQˆØŒ=×ÒÑ Ô  MÒ1Ñ1Ø”=Ğ:=Ô&Ğ:Ğ&Ğ&Ñ(Ô(Ğ:Ğ(¨NÒ:Ğ:Ğ:Ğ:Õ:Ô:Ğ:Ğ:Ğ:Ğ:Ğ(¨NĞ:Ñ:Ô:Ğ:Õ:Ô:Ñ:Ô:Ğ:Ğ:Õ:Ô:6Ñ:Ô:Ğ:Õ:Ô:6Ñ:Ô:Ğ:Ğ:Õ:Ô:=Ñ:Ô:Õ:Ô:Ğ&Ñ:Ô:Õ:Ô:Ğ(Ñ:Ô:Ğ:Õ:Ô:Ñ:Ô:Ğ:Ğ:Õ:Ô:¨NÑ:Ô:Ğ:Õ:Ô:¨NÑ:Ô:Ğ:Ğ:Ğ:Ğ:Ñ:Ğ:Ğ:Ğ:Ğ:Ğ:Ñ:Ğ:Õ:Õ:Ô:Ğ:Ñ:Ô:Ñ:Ô:Ğ:Ğ:Ğ:Ğ:Ğ:Ğ:Ğ:Ğ:Ğ:ùğ;ğ ;r/   )Úbuiltinsr   Ú_pytest.assertion.rewriteÚ	assertionÚrewriter   Úpytestr.   rH   rK   rM   rR   ra   r<   r/   r-   ú<module>rg      s   ğØ  € € € € € € € € € € € € €€€€ğ#ğ #ğ #ğ#ğ #ğ #ğ#ğ #ğ #ğ0ğ 0ğ 0ğJğ Jğ Jğ;ğ ;ğ ;ğ ;ğ ;r/   
-# molecule.yml
----
-dependency:
-  name: galaxy
-
-driver:
-  name: podman
-
-platforms:
-  - name: ubuntu-20
-    image: "docker.io/geerlingguy/docker-ubuntu2004-ansible"
-    pre_build_image: true
-    privileged: true
-    command: /lib/systemd/systemd
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-
-  - name: ubuntu-22
-    image: "docker.io/geerlingguy/docker-ubuntu2204-ansible:latest"
-    pre_build_image: true
-    privileged: true
-    command: /lib/systemd/systemd
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-
-  - name: debian-12
-    image: "docker.io/geerlingguy/docker-debian12-ansible:latest"
-    pre_build_image: true
-    privileged: true
-    command: /lib/systemd/systemd
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-
-provisioner:
-  name: ansible
-  config_options:
-    defaults:
-      callbacks_enabled: profile_tasks, timer
-  inventory:
-    group_vars:
-      all:
-        net_tuning_state: present
-        net_tuning_modules:
-          - overlay
-          - br_netfilter
-        net_tuning_sysctls:
-          net.bridge.bridge-nf-call-ip6tables: 1
-          net.bridge.bridge-nf-call-iptables: 1
-          net.ipv4.ip_forward: 1
-        net_tuning_modules_conf_path: "/etc/modules-load.d/net-tuning.conf"
-        net_tuning_sysctl_conf_path: "/etc/sysctl.d/90-net-tuning.conf"
-  env:
-    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
-
-verifier:
-  name: testinfra
-  directory: tests
-  options:
-    verbose: true
-
-scenario:
-  name: default
-
-# molecule.yml
----
-# Identique Ã  default/molecule.yml mais avec la variable d'Ã©tat modifiÃ©e
-dependency:
-  name: galaxy
-
-driver:
-  name: podman
-
-platforms:
-  - name: ubuntu-20
-    image: "docker.io/geerlingguy/docker-ubuntu2004-ansible"
-    pre_build_image: true
-    privileged: true
-    command: /lib/systemd/systemd
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-
-  - name: ubuntu-22
-    image: "docker.io/geerlingguy/docker-ubuntu2204-ansible:latest"
-    pre_build_image: true
-    privileged: true
-    command: /lib/systemd/systemd
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-
-  - name: debian-12
-    image: "docker.io/geerlingguy/docker-debian12-ansible:latest"
-    pre_build_image: true
-    privileged: true
-    command: /lib/systemd/systemd
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-
-provisioner:
-  name: ansible
-  config_options:
-    defaults:
-      callbacks_enabled: profile_tasks, timer
-  inventory:
-    group_vars:
-      all:
-        net_tuning_state: absent
-        net_tuning_modules:
-          - overlay
-          - br_netfilter
-        net_tuning_sysctls:
-          net.bridge.bridge-nf-call-ip6tables: 1
-          net.bridge.bridge-nf-call-iptables: 1
-          net.ipv4.ip_forward: 1
-        net_tuning_modules_conf_path: "/etc/modules-load.d/net-tuning.conf"
-        net_tuning_sysctl_conf_path: "/etc/sysctl.d/90-net-tuning.conf"
-  env:
-    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
-
-verifier:
-  name: testinfra
-  directory: tests
-  options:
-    verbose: true
-
-scenario:
-  name: absent
-
-# converge.yml
----
-- name: Converge
-  hosts: all
-  roles:
-    - role: system_configure_kernel_network_rules
-
-# test_absent.py
-import pytest
-
-def test_modules_conf_file_removed(host):
-    """VÃ©rifie que le fichier de configuration des modules a Ã©tÃ© supprimÃ©"""
-    conf_file = host.file("/etc/modules-load.d/net-tuning.conf")
-    assert not conf_file.exists
-
-def test_sysctl_conf_file_removed(host):
-    """VÃ©rifie que le fichier de configuration sysctl a Ã©tÃ© supprimÃ©"""
-    conf_file = host.file("/etc/sysctl.d/90-net-tuning.conf")
-    assert not conf_file.exists
-
-def test_sysctl_values_reverted(host):
-    """VÃ©rifie que les valeurs sysctl ont Ã©tÃ© rÃ©initialisÃ©es"""
-    # Cette vÃ©rification est difficile car nous ne connaissons pas les valeurs par dÃ©faut
-    # Nous nous contentons de vÃ©rifier que les fichiers de configuration ont Ã©tÃ© supprimÃ©s
-    pass
-# README.md
-# Ansible Role: rridane.base_systems.net_tuning
-
-Ce rÃ´le applique une configuration rÃ©seau minimale pour **Kubernetes/containers** :
-- charge des **modules noyau** (ex. `overlay`, `br_netfilter`),
-- applique des **sysctl** (ex. `bridge-nf-call-iptables`, `ip_forward`),
-- gÃ¨re les fichiers persistants `/etc/modules-load.d/*.conf` et `/etc/sysctl.d/*.conf`.
-
-Mode **present** â‡’ applique modules + sysctl.  
-Mode **absent** â‡’ retire modules + sysctl et **supprime** les fichiers `.conf`.
-
----
-
-## ğŸš€ Installation
-
-```bash
-ansible-galaxy install rridane.base_systems.net_tuning
-```
-
-ou via **requirements.yml**:
-
-```yaml
-- name: rridane.base_systems.net_tuning
-  version: ">=1.0.0"
-```
-
-## Variables 
-
-## âš™ï¸ Variables
-
-| Variable                         | DÃ©faut                                   | Description                                                       |
-|----------------------------------|-------------------------------------------|-------------------------------------------------------------------|
-| net_tuning_state                 | present                                   | `present` pour appliquer, `absent` pour retirer et supprimer les `.conf` |
-| net_tuning_modules               | ['overlay','br_netfilter']                | Modules noyau Ã  charger au boot (et Ã  chaud si autorisÃ©)          |
-| net_tuning_load_now              | true                                      | Charger les modules Ã  chaud (dÃ©sactivÃ© auto en conteneur)         |
-| net_tuning_apply_sysctl_now      | true                                      | Appliquer les sysctl immÃ©diatement (dÃ©sactivÃ© auto en conteneur)  |
-| net_tuning_sysctls               | voir ci-dessous                           | ClÃ©s sysctl Ã  appliquer (dict `clÃ©: valeur`)                      |
-| net_tuning_modules_conf_path     | /etc/modules-load.d/net-tuning.conf       | Fichier gÃ©nÃ©rÃ© pour les modules persistants                       |
-| net_tuning_sysctl_conf_path      | /etc/sysctl.d/90-net-tuning.conf          | Fichier gÃ©nÃ©rÃ© pour les sysctl persistants                        |
-
-## ğŸ§© Ce que le rÃ´le fait
-
-- Installe les dÃ©pendances systÃ¨me nÃ©cessaires (`kmod`, `procps`/`procps-ng`) **hors conteneurs**.
-
-### present
-- Charge les modules (si `net_tuning_load_now=true`).
-- Ã‰crit `modules-load.d` avec la liste des modules.
-- Applique les sysctl (si `net_tuning_apply_sysctl_now=true`) **aprÃ¨s** le chargement des modules.
-- Ã‰crit `sysctl.d` pour la persistance.
-
-### absent
-- Retire les sysctl (*best effort*) et supprime le fichier `sysctl.d`.
-- Tente de dÃ©charger les modules (*best effort*).
-- Supprime le fichier `modules-load.d`.
-
-## Installation packages simple
-
-```yaml
-- hosts: all
-  become: true
-  roles:
-    - role: rridane.net_tuning
-      vars:
-        net_tuning_state: present
-```
-
-## Personnaliser modules + sysctl
-
-```yaml
-- hosts: all
-  become: true
-  roles:
-    - role: rridane.net_tuning
-      vars:
-        net_tuning_modules:
-          - overlay
-          - br_netfilter
-          - nf_conntrack
-        net_tuning_sysctls:
-          net.bridge.bridge-nf-call-iptables: 1
-          net.ipv4.ip_forward: 1
-          net.ipv4.conf.all.rp_filter: 0
-```
-
-## Nettoyage
-
-```yaml
-- hosts: all
-  become: true
-  roles:
-    - role: rridane.net_tuning
-      vars:
-        net_tuning_state: absent
-
-```
-
-## âœ… Effets attendus
-
-- Fichiers gÃ©nÃ©rÃ©s :
-    - `/etc/modules-load.d/net-tuning.conf`
-    - `/etc/sysctl.d/90-net-tuning.conf`
-- Modules `overlay` & `br_netfilter` disponibles (chargÃ©s si autorisÃ©).
-- Sysctl appliquÃ©s **et** persistÃ©s.
-
----
-
-## ğŸ“ Notes
-
-- Certains sysctl (ex. `net.bridge.*`) exigent **`br_netfilter`** : le rÃ´le charge les modules **avant** dâ€™appliquer les sysctl.
-- La dÃ©charge de modules en mode `absent` est *best effort* (Ã©choue silencieusement sâ€™ils sont encore utilisÃ©s).
-- DÃ©pendances installÃ©es automatiquement (hors conteneurs) :
-    - Debian/Ubuntu/Alpine â†’ `kmod`, `procps`
-    - RedHat/CentOS/Rocky â†’ `kmod`, `procps-ng`
-- TestÃ© sur : Debian *bullseye/bookworm*, Ubuntu *focal/jammy/noble*.
-
-
-# test
-

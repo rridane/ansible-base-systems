@@ -1,13 +1,13 @@
 # Ansible Role: rridane.base_systems.system_install_containerd
 
-Ce rôle installe et configure **containerd** (service systemd, `config.toml`, registries via `hosts.toml`), gère l’activation/démarrage et optionnellement un proxy.  
-Supporte les états **present/absent**.
+This role installs and configures **containerd** (systemd service, `config.toml`, registries via `hosts.toml`), manages activation/startup and optionally a proxy.  
+Supports **present/absent** states.
 
 ---
 
 ## 🚀 Installation
 
-`requirements.yml` :
+`requirements.yml`:
 
 ```yaml
 - name: rridane.base_systems.system_install_containerd
@@ -18,16 +18,16 @@ Supporte les états **present/absent**.
 ansible-galaxy install -r requirements.yml
 ```
 
-| Variable                       | Par défaut                | Description                                                                 |
-|--------------------------------|----------------------------|-----------------------------------------------------------------------------|
-| containerd_state               | present                    | `present` pour installer/configurer, `absent` pour retirer                  |
-| containerd_version             | ""                         | Version paquet containerd (ex: 1.7.26-1). Vide = dernière depuis le repo Docker |
-| containerd_root                | /mnt/data/containerd       | Répertoire data (`root`) pour containerd                                    |
-| containerd_registry_config_path| /etc/containerd/certs.d    | Dossier des configs par registry (fichiers `hosts.toml`)                    |
-| containerd_registries          | []                         | Liste des registries à configurer (voir structure ci-dessous)               |
-| containerd_proxy               | ""                         | URL proxy pour containerd (vide pour désactiver). Ex : `http://proxy.local:3128` |
+| Variable                        | Default                    | Description |
+|---------------------------------|----------------------------|-------------|
+| containerd_state                | present                    | `present` to install/configure, `absent` to remove |
+| containerd_version              | ""                         | Package version of containerd (e.g. 1.7.26-1). Empty = latest from Docker repo |
+| containerd_root                 | /mnt/data/containerd       | Data directory (`root`) for containerd |
+| containerd_registry_config_path | /etc/containerd/certs.d    | Directory of registry configs (`hosts.toml` files) |
+| containerd_registries           | []                         | List of registries to configure (see structure below) |
+| containerd_proxy                | ""                         | Proxy URL for containerd (empty to disable). Ex: `http://proxy.local:3128` |
 
-## Structure des registries
+## Registry structure
 
 ```yaml
 containerd_registries:
@@ -37,19 +37,19 @@ containerd_registries:
     endpoints: ["http://10.33.1.94:5600"]
 ```
 
-## 🧩 Ce que le rôle fait
+## 🧩 What the role does
 
-- Installe *containerd* (version pinée si `containerd_version` est défini).
-- Déploie `/etc/containerd/config.toml`  
-  (CRI activé, `systemd_cgroup = true`, `config_path = {{ containerd_registry_config_path }}`).
-- Crée un dossier par *registry* :  
+- Installs *containerd* (pinned version if `containerd_version` is defined).
+- Deploys `/etc/containerd/config.toml`  
+  (CRI enabled, `systemd_cgroup = true`, `config_path = {{ containerd_registry_config_path }}`).
+- Creates a folder per *registry*:  
   `{{ containerd_registry_config_path }}/<host>[:<port>]/hosts.toml`  
-  avec les `endpoints`, `capabilities` et `skip_verify` si `insecure`/HTTP.
-- Active & démarre le service `containerd`.
-- (Optionnel) Applique un proxy si `containerd_proxy` est défini.
-- État *absent* : stoppe/désactive le service et nettoie la configuration.
+  with `endpoints`, `capabilities`, and `skip_verify` if `insecure`/HTTP.
+- Enables & starts the `containerd` service.
+- (Optional) Applies a proxy if `containerd_proxy` is defined.
+- *Absent* state: stops/disables the service and cleans up configuration.
 
-## Exemple
+## Example
 
 ```yaml
 - hosts: all
@@ -59,7 +59,7 @@ containerd_registries:
       vars:
         containerd_state: present
         containerd_root: /mnt/data/containerd
-        # containerd_version: "1.7.26-1"   # optionnel, pour pinner la version
+        # containerd_version: "1.7.26-1"   # optional, to pin version
         containerd_registries:
           - host: "10.212.22.8"
             port: 5600
@@ -71,13 +71,13 @@ containerd_registries:
             endpoints: ["http://10.212.22.8:5500"]
 ```
 
-### Effets
+### Effects
 
-- `/etc/containerd/config.toml` généré (CRI activé, `config_path` pointant sur `certs.d`).
-- Deux `hosts.toml` créés sous `certs.d/<host>:<port>/`.
-- Service `containerd` activé (*enabled*) et démarré (*started*).
+- `/etc/containerd/config.toml` generated (CRI enabled, `config_path` pointing to `certs.d`).
+- Two `hosts.toml` created under `certs.d/<host>:<port>/`.
+- `containerd` service enabled and started.
 
-## Exemple absent
+## Example absent
 
 ```yaml
 - hosts: all
@@ -88,24 +88,24 @@ containerd_registries:
         containerd_state: absent
 ```
 
-### Effets (état absent)
+### Effects (absent state)
 
-- Service `containerd` stoppé et désactivé.
-- Fichiers de configuration supprimés (incluant les registres sous `certs.d`).
-- Système propre.
+- `containerd` service stopped and disabled.
+- Configuration files removed (including registries under `certs.d`).
+- Clean system.
 
 ## 📝 Notes
 
-### Registries & sécurité
-- `insecure: true` ou des `endpoints` en `http://` forcent `skip_verify = true` dans `hosts.toml`.
-- Pour du TLS avec vérification : laisse `insecure: false` et fournis tes certificats sous  
+### Registries & security
+- `insecure: true` or `http://` endpoints force `skip_verify = true` in `hosts.toml`.
+- For TLS with verification: leave `insecure: false` and provide your certificates under  
   `{{ containerd_registry_config_path }}/<host>[:<port>]/`  
-  (ex: `ca.crt`, `client.cert`, `client.key`).
+  (e.g. `ca.crt`, `client.cert`, `client.key`).
 
 ### CRI & Kubernetes
-- Le template active `plugins."io.containerd.grpc.v1.cri".systemd_cgroup = true`.
-- Définit `sandbox_image = "registry.k8s.io/pause:3.9"`.
+- The template enables `plugins."io.containerd.grpc.v1.cri".systemd_cgroup = true`.
+- Defines `sandbox_image = "registry.k8s.io/pause:3.9"`.
 
 ### Proxy
-- Si `containerd_proxy` est défini, le rôle peut placer les variables d’environnement (`HTTP(S)_PROXY`, `NO_PROXY`) dans l’environnement du service (selon ton implémentation).
-- Pour un proxy global système, regarde aussi le rôle `rridane.system_proxy`.  
+- If `containerd_proxy` is defined, the role can place environment variables (`HTTP(S)_PROXY`, `NO_PROXY`) into the service environment (depending on your implementation).
+- For a global system proxy, also check the role `rridane.system_proxy`.

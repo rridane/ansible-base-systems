@@ -1,69 +1,68 @@
 # Ansible Role: rridane.base_systems.system_k8s_cli_swissknife
 
-Bundle d’outils **CLI Kubernetes** (**hors kubectl**) :  
-`krew` (+ plugins), `k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye` pour **Debian/Ubuntu**.
+Bundle of **Kubernetes CLI tools** (**excluding kubectl**):  
+`krew` (+ plugins), `k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye` for **Debian/Ubuntu**.
 
-🎯 Objectif : une **boîte à outils prête à l’emploi**, idempotente, et facilement **pilotée par variables**.
+🎯 Goal: a **ready-to-use toolbox**, idempotent, and easily **driven by variables**.
 
 ---
 
-## ✅ Compatibilité & prérequis
+## ✅ Compatibility & prerequisites
 
-- **OS** : Debian 12+, Ubuntu 20.04/22.04.
-- **krew** : nécessite `git`.
-- **kubectl** : **non géré par ce rôle**.
-  - Si `kubectl` est absent, l’installation des **plugins krew** est **sautée**.
-  - krew reste installé et prêt à l’emploi une fois `kubectl` disponible.
+- **OS**: Debian 12+, Ubuntu 20.04/22.04.
+- **krew**: requires `git`.
+- **kubectl**: **not managed by this role**.
+  - If `kubectl` is absent, installation of **krew plugins** is **skipped**.
+  - krew remains installed and ready once `kubectl` is available.
 
 ---
 
 ## ⚙️ Variables
 
-### Globales
+### Global
 
 - `tools_state` (`present` | `absent`)  
-  État global : installer/configurer ou désinstaller.
-- `bin_path` : chemin où installer les binaires (défaut `/usr/local/bin`).
-- `system_arch` : architecture (`amd64` ou `arm64`).
+  Global state: install/configure or uninstall.
+- `bin_path`: path where to install binaries (default `/usr/local/bin`).
+- `system_arch`: architecture (`amd64` or `arm64`).
 
 ### `tools.krew`
 
-- `enabled` (bool, défaut `true`) – active/désactive krew.
-- `version` (str, défaut `""`) – version, `""` = dernière release.
-- `krew_root` (str, défaut `/opt/krew`) – racine d’installation.
-- `plugins` (list) – plugins à installer via `kubectl krew` (skippés si `kubectl` absent).
+- `enabled` (bool, default `true`) – enable/disable krew.
+- `version` (str, default `""`) – version, `""` = latest release.
+- `krew_root` (str, default `/opt/krew`) – installation root.
+- `plugins` (list) – plugins to install via `kubectl krew` (skipped if `kubectl` absent).
 
-### Autres outils (`k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye`)
+### Other tools (`k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye`)
 
-- `enabled` (bool) – active/désactive l’outil.
-- `version` (str) – `""` = dernière release.
-- `arch` (str) – `amd64` ou `arm64` (si applicable).
-
----
-
-## 🧩 Ce que le rôle fait
-
-- **krew** :
-  - Télécharge et installe le binaire.
-  - Ajoute `/etc/profile.d/krew.sh` pour le PATH.
-  - Installe les plugins si `kubectl` est présent, sinon affiche un avertissement.
-
-- **Autres outils** :
-  - Télécharge et installe les binaires (ou paquets pour `jq`).
-  - Crée les fichiers dans `{{ bin_path }}`.
-
-- **Désinstallation (`tools_state: absent`)** :
-  - Supprime les binaires gérés (`helm`, `k9s`, `kustomize`, `kubent`, `popeye`, `yq`).
-  - Désinstalle `jq` via APT.
-  - Supprime `krew_root` et le script PATH (`/etc/profile.d/krew.sh`).
+- `enabled` (bool) – enable/disable the tool.
+- `version` (str) – `""` = latest release.
+- `arch` (str) – `amd64` or `arm64` (if applicable).
 
 ---
 
-## 🚀 Exemples
+## 🧩 What the role does
 
-👉 Mettre exemple installation ici
+- **krew**:
+  - Downloads and installs the binary.
+  - Adds `/etc/profile.d/krew.sh` to PATH.
+  - Installs plugins if `kubectl` is present, otherwise prints a warning.
+
+- **Other tools**:
+  - Downloads and installs binaries (or packages for `jq`).
+  - Places the files into `{{ bin_path }}`.
+
+- **Uninstallation (`tools_state: absent`)**:
+  - Removes managed binaries (`helm`, `k9s`, `kustomize`, `kubent`, `popeye`, `yq`).
+  - Uninstalls `jq` via APT.
+  - Removes `krew_root` and PATH script (`/etc/profile.d/krew.sh`).
+
+---
+
+## 🚀 Examples
+
 ```yaml
-# installation simple
+# simple installation
 - hosts: all
   become: true
   roles:
@@ -103,19 +102,19 @@ Bundle d’outils **CLI Kubernetes** (**hors kubectl**) :
 
 ---
 
-## ✅ Effets attendus
+## ✅ Expected effects
 
-- Tous les binaires activés présents dans `bin_path`.
-- `jq` installé via APT.
-- `krew` disponible dans le PATH via `/etc/profile.d/krew.sh`.
-- Plugins krew installés si `kubectl` est présent.
-- En mode `absent`, tout est proprement retiré (hors kubectl).
+- All enabled binaries present in `bin_path`.
+- `jq` installed via APT.
+- `krew` available in PATH via `/etc/profile.d/krew.sh`.
+- krew plugins installed if `kubectl` is present.
+- In `absent` mode, everything is cleanly removed (excluding kubectl).
 
 ---
 
 ## 📝 Notes
 
-- Ce rôle **ne gère pas kubectl**.
-- `jq` est géré via APT, les autres via binaires GitHub.
-- Plugins krew : **idempotents** si `kubectl` est installé.
-- Testé sur Debian 12 et Ubuntu 20.04/22.04.
+- This role **does not manage kubectl**.
+- `jq` is managed via APT, others via GitHub binaries.
+- krew plugins: **idempotent** if `kubectl` is installed.
+- Tested on Debian 12 and Ubuntu 20.04/22.04.

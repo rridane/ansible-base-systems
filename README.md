@@ -1,52 +1,52 @@
 # Ansible Collection — Base Systems & Kubernetes Toolkit
 
-Cette collection fournit un ensemble de **rôles système** et **outils Kubernetes** destinés à Debian/Ubuntu.  
-Objectif : disposer de **briques modulaires, idempotentes et testées** avec Molecule, pour assembler rapidement une infrastructure prête à l’emploi.
+This collection provides a set of **system roles** and **Kubernetes tools** intended for Debian/Ubuntu.  
+Goal: to have **modular, idempotent, and Molecule-tested building blocks** to quickly assemble a ready-to-use infrastructure.
 
 ---
 
-## 📦 Rôles inclus
+## 📦 Included Roles
 
-### 🔧 Configuration système
+### 🔧 System configuration
 - **system-configure-proxy**  
-  Configure un proxy système (`http_proxy`, `https_proxy`, `no_proxy`) et supporte `cntlm`.
+  Configures a system proxy (`http_proxy`, `https_proxy`, `no_proxy`) and supports `cntlm`.
 - **system-configure-swap**  
-  Crée, active ou désactive un fichier de swap de manière idempotente.
+  Creates, enables, or disables a swap file in an idempotent way.
 - **system-configure-kernel-network-rules**  
-  Charge et maintient des modules réseau (`br_netfilter`, etc.), configure `sysctl` pour Kubernetes.
+  Loads and maintains network modules (`br_netfilter`, etc.), configures `sysctl` for Kubernetes.
 - **system-manage-etc-hosts**  
-  Gère `/etc/hosts` via blocs délimités Ansible (idempotent, sauvegarde activée).
+  Manages `/etc/hosts` via Ansible-delimited blocks (idempotent, backup enabled).
 - **system-manage-systemd-unit**  
-  Crée, active ou supprime des unités `systemd` (supporte scope `system` et `user`).
+  Creates, enables, or removes `systemd` units (supports `system` and `user` scope).
 
 ### 🔐 Services & middlewares
 - **system-manage-cntlm**  
-  Compile, installe et configure CNTLM (proxy NTLMv2). Peut être couplé à `system-configure-proxy`.
+  Compiles, installs, and configures CNTLM (NTLMv2 proxy). Can be coupled with `system-configure-proxy`.
 - **system-install-nfs-commons**  
-  Installe et configure les paquets NFS (`nfs-common`) pour le montage de volumes partagés.
+  Installs and configures NFS packages (`nfs-common`) for mounting shared volumes.
 
 ### 🖥️ Container runtime
 - **system-install-containerd**  
-  Installe et configure `containerd` (runtime officiel pour Kubernetes).
+  Installs and configures `containerd` (official runtime for Kubernetes).
 
 ### 🏗️ Kubernetes core
 - **system-install-kube-packages**  
-  Installe les paquets de base Kubernetes (`kubeadm`, `kubelet`, `kubectl`) depuis **pkgs.k8s.io** (avec gestion de version et keyrings).
+  Installs core Kubernetes packages (`kubeadm`, `kubelet`, `kubectl`) from **pkgs.k8s.io** (with version management and keyrings).
 - **system-install-haproxy-keepalived**  
-  Déploie un HAProxy + Keepalived pour assurer une IP virtuelle haute-disponibilité (VIP) en frontal d’un cluster Kubernetes.
+  Deploys HAProxy + Keepalived to ensure a high-availability virtual IP (VIP) in front of a Kubernetes cluster.
 - **system-cleanup-kube**  
-  Supprime les paquets, dépôts et fichiers liés à Kubernetes pour remettre le système à plat.
+  Removes packages, repositories, and files related to Kubernetes to reset the system.
 
 ### 🛠️ Kubernetes toolbox
 - **system-k8s-cli-swissknife**  
-  Bundle d’outils CLI Kubernetes :
-    - `kubectl` (dernière stable ou version précise, via APT pkgs.k8s.io)
-    - `krew` + plugins utiles (`ctx`, `ns`, `stern`, etc.)
+  Bundle of Kubernetes CLI tools:
+    - `kubectl` (latest stable or specific version, via APT pkgs.k8s.io)
+    - `krew` + useful plugins (`ctx`, `ns`, `stern`, etc.)
     - `k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye`
 
 ---
 
-## 🚀 Exemple d’utilisation
+## 🚀 Example usage
 
 ```yaml
 - hosts: all
@@ -68,7 +68,7 @@ Objectif : disposer de **briques modulaires, idempotentes et testées** avec Mol
         tools:
           kubectl:
             enabled: true
-            version: ""       # dernière stable
+            version: ""       # latest stable
           krew:
             enabled: true
             plugins: [ctx, ns, stern, oidc-login]

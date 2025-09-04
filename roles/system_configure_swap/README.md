@@ -1,24 +1,24 @@
-# ansible role rridane.base_systems.system_configure_swap
+# Ansible Role: rridane.base_systems.system_configure_swap
 
-Active ou désactive le **swap** sur un système Linux (Ubuntu/Debian).  
-Le rôle agit de manière **idempotente** : il commente/décommente les entrées `swap` dans `/etc/fstab` et exécute `swapon`/`swapoff` pour appliquer immédiatement.
+Enables or disables **swap** on a Linux system (Ubuntu/Debian).  
+The role acts in an **idempotent** way: it comments/uncomments `swap` entries in `/etc/fstab` and runs `swapon`/`swapoff` to apply immediately.
 
 ## Variables
 
-| Variable       | Type  | Défaut | Description |
-|----------------|-------|--------|-------------|
-| `swap_enabled` | bool  | `false` | Contrôle l'état du swap. <br> - `true` → active le swap et décommente les entrées dans `/etc/fstab`. <br> - `false` → désactive le swap et commente les entrées dans `/etc/fstab`. |
+| Variable       | Type  | Default | Description |
+|----------------|-------|---------|-------------|
+| `swap_enabled` | bool  | `false` | Controls the swap state. <br> - `true` → enables swap and uncomments entries in `/etc/fstab`. <br> - `false` → disables swap and comments entries in `/etc/fstab`. |
 
-## Exemple d’utilisation
+## Example usage
 
 ```yaml
-# Désactive le swap (recommandé pour kubernetes)
+# Disables swap (recommended for Kubernetes)
 - hosts: all
   become: true
   roles:
     - role: rridane.base_systems.system_configure_swap
       vars:
-        swap_enabled: false # Désactive le swap
+        swap_enabled: false # Disable swap
 ```
 
 ```yaml
@@ -27,18 +27,18 @@ Le rôle agit de manière **idempotente** : il commente/décommente les entrées
   roles:
     - role: rridane.base_systems.system_configure_swap
       vars:
-        swap_enabled: false # Réactive le swap
+        swap_enabled: true # Re-enable swap
 ```
 
 ## Notes
 
-- Le rôle n’ajoute pas de nouveau fichier de swap. Il gère uniquement l’activation/désactivation des entrées déjà présentes dans /etc/fstab.
+- The role does not add a new swap file. It only manages the enabling/disabling of entries already present in /etc/fstab.
 
-- Si aucun swap n’est défini, swapon -a n’aura pas d’effet.
+- If no swap is defined, `swapon -a` will have no effect.
 
-- Testé sur Ubuntu 22.04 (Jammy).
+- Tested on Ubuntu 22.04 (Jammy).
 
-- Compatibilité
+- Compatibility:
 
-Ansible >=2.12
-Ubuntu 22.04 (Jammy)
+  - Ansible >= 2.12  
+  - Ubuntu 22.04 (Jammy)

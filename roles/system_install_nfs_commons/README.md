@@ -1,7 +1,7 @@
 # Ansible Role: rridane.base_systems.system_install_nfs_commons
 
-Rôle ultra-simple pour **installer/désinstaller le client NFS**.  
-Sur Debian/Ubuntu, installe le paquet `nfs-common`.
+Ultra-simple role to **install/uninstall the NFS client**.  
+On Debian/Ubuntu, installs the `nfs-common` package.
 
 ---
 
@@ -11,12 +11,11 @@ Sur Debian/Ubuntu, installe le paquet `nfs-common`.
 ansible-galaxy install rridane.base_systems.system_install_nfs_commons
 ```
 
-| Variable                         | Défaut                                   | Description                                                       |
-|----------------------------------|-------------------------------------------|-------------------------------------------------------------------|
-| nfs_common_state | present                                   | `present` pour appliquer, `absent` pour retirer |
+| Variable          | Default  | Description |
+|-------------------|----------|-------------|
+| nfs_common_state  | present  | `present` to apply, `absent` to remove |
 
-
-## Utilisation
+## Usage
 
 ```yaml
 - hosts: all
@@ -27,7 +26,7 @@ ansible-galaxy install rridane.base_systems.system_install_nfs_commons
         nfs_common_state: present
 ```
 
-## Désinstaller
+## Uninstall
 
 ```yaml
 - hosts: all
@@ -36,13 +35,12 @@ ansible-galaxy install rridane.base_systems.system_install_nfs_commons
     - role: rridane.base_systems.system_install_nfs_commons
       vars:
         nfs_common_state: absent
-
 ```
 
-## ✅ Effets attendus
+## ✅ Expected effects
 
-- Paquet **`nfs-common`** installé (Debian/Ubuntu).
-- Binaries présents et exécutables :
+- **`nfs-common`** package installed (Debian/Ubuntu).
+- Binaries present and executable:
     - `/usr/sbin/mount.nfs`
     - `/usr/sbin/showmount`
 
@@ -50,17 +48,17 @@ ansible-galaxy install rridane.base_systems.system_install_nfs_commons
 
 ## 📝 Notes
 
-- **Cible actuelle** : Debian/Ubuntu (utilise `ansible.builtin.apt`).
-- Sur **RedHat/CentOS/Rocky**, le paquet équivalent est **`nfs-utils`** *(non géré par ce rôle dans sa version minimale)*.
-- Le play met à jour l’index APT (`update_cache: true`).
+- **Current target**: Debian/Ubuntu (uses `ansible.builtin.apt`).
+- On **RedHat/CentOS/Rocky**, the equivalent package is **`nfs-utils`** *(not handled by this role in its minimal version)*.
+- The play updates the APT index (`update_cache: true`).
 
 ---
 
 ## 🧪 Tests (Molecule / Testinfra)
 
-- Vérifie que le paquet NFS client est installé :
+- Verifies that the NFS client package is installed:
     - Debian/Ubuntu → `nfs-common`
-    - EL (si adapté ultérieurement) → `nfs-utils`
-- Vérifie que les binaries existent et sont exécutables :
+    - EL (if later adapted) → `nfs-utils`
+- Verifies that binaries exist and are executable:
     - `/usr/sbin/mount.nfs`
     - `/usr/sbin/showmount`
