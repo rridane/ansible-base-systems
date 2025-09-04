@@ -28,12 +28,11 @@ Il crée un bloc délimité par des marqueurs `# ANSIBLE-MANAGED <block_name> BE
 etc_hosts:
   - ip: "10.0.0.10"
     names: ["api.internal", "api"]   # alias affichés sur la même ligne
-    hostname: "api-01"               # (optionnel) sera ajouté aux alias si présent
     comment: "API server"            # (optionnel) commentaire en fin de ligne
 ```
 
 ## 💡 Format de rendu d’une ligne
-`IP  <names...> [hostname]  # comment`
+`IP  <names...> [names]  # comment`
 
 ## 🧩 Ce que le rôle fait
 
@@ -63,11 +62,9 @@ etc_hosts:
         etc_hosts:
           - ip: "10.0.0.10"
             names: ["api.internal", "api"]
-            hostname: "api-01"
             comment: "API server"
           - ip: "10.0.0.20"
             names: ["traefik.internal", "traefik"]
-            hostname: "ing-01"
             comment: "Ingress"
 ```
 

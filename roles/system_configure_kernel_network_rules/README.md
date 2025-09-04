@@ -20,7 +20,7 @@ ou via **requirements.yml**:
 
 ```yaml
 - name: rridane.base_systems.net_tuning
-  version: ">=1.0.0"
+  version: ">=1.0.0" # à vérifier sur ansible-galaxy
 ```
 
 ## Variables 
@@ -42,12 +42,14 @@ ou via **requirements.yml**:
 - Installe les dépendances système nécessaires (`kmod`, `procps`/`procps-ng`) **hors conteneurs**.
 
 ### present
+
 - Charge les modules (si `net_tuning_load_now=true`).
 - Écrit `modules-load.d` avec la liste des modules.
 - Applique les sysctl (si `net_tuning_apply_sysctl_now=true`) **après** le chargement des modules.
 - Écrit `sysctl.d` pour la persistance.
 
 ### absent
+
 - Retire les sysctl (*best effort*) et supprime le fichier `sysctl.d`.
 - Tente de décharger les modules (*best effort*).
 - Supprime le fichier `modules-load.d`.

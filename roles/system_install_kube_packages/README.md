@@ -18,7 +18,6 @@ ansible-galaxy install rridane.kube_packages
 | kube_state      | present                             | `present` pour installer/mettre en place, `absent` pour purger/réinitialiser |
 | kube_version    | ""                                  | Version exacte (ex: `1.30.2-1.1`). Vide = dernière version dispo dans le repo |
 | kube_series     | v1.30                               | Série stable (`v1.29`, `v1.30`…) utilisée pour pkgs.k8s.io                   |
-| kube_cri_socket | /var/run/containerd/containerd.sock | Socket CRI passé à `kubeadm reset` (containerd ou CRI-O)                     |
 
 ---
 
@@ -44,3 +43,12 @@ ansible-galaxy install rridane.kube_packages
         kube_series: "v1.30"
 ```
 
+```yaml
+# Désinstallation simple
+- hosts: all
+  become: true
+  roles:
+    - role: rridane.kube_packages
+      vars:
+        kube_state: absent
+```

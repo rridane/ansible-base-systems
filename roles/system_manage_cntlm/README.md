@@ -1,6 +1,6 @@
 # Ansible Role: rridane.cntlm
 
-Ce rôle installe et configure **CNTLM** (proxy NTLM/NTLMv2) depuis les sources, mais il ne créé par la configuration systemd, envisagez l'utilisation de system-add-systemd-unit si c'est un besoin. 
+Ce rôle installe et configure **CNTLM** (proxy NTLM/NTLMv2) depuis les sources, mais il ne créé par la configuration systemd, envisagez l'utilisation de **rridane.base_systems.system_manage_systemd_unit** si c'est un besoin. 
 Supporte les états **present/absent**.
 
 ---
@@ -27,7 +27,6 @@ ansible-galaxy install -r requirements.yml
 | cntlm_build_dir        | /usr/local/src/cntlm            | Dossier de compilation                                                       |
 | cntlm_bin_path         | /usr/local/sbin/cntlm           | Chemin d’installation du binaire                                             |
 | cntlm_conf_path        | /etc/cntlm.conf                 | Chemin du fichier de configuration                                           |
-| cntlm_unit_path        | /etc/systemd/system/cntlm.service | Chemin du service systemd                                                  |
 | cntlm_username         | ""                              | Nom d’utilisateur NTLM                                                       |
 | cntlm_domain           | ""                              | Domaine                                                                      |
 | cntlm_password         | ""                              | Mot de passe (**évitez**, préférez `cntlm_pass_ntlmv2` + Ansible Vault)      |
@@ -38,7 +37,6 @@ ansible-galaxy install -r requirements.yml
 | cntlm_upstream_port    | 3128                            | Port upstream                                                                |
 | cntlm_no_proxy         | []                              | Liste de domaines/IP à exclure (convertie en lignes `NoProxy …`)             |
 | cntlm_extra_options    | []                              | Lignes additionnelles brutes (ex: `NTLMv2 on`)                               |
-| cntlm_restart_on_change | true                           | Redémarrer le service si la conf/unité change                                |
 
 ⚠ Fournissez exactement un des deux : **cntlm_password** ou **cntlm_pass_ntlmv2** (et **cntlm_username** requis).
 
@@ -61,8 +59,3 @@ ansible-galaxy install -r requirements.yml
           - "127.0.0.1"
           - ".interne"
 ```
-
-## 🔗 Voir aussi
-
-- [rridane.proxy](https://galaxy.ansible.com/rridane/proxy) — configure les proxys système (APT, /etc/environment, systemd).
-- [rridane.systemd_unit](https://galaxy.ansible.com/rridane/systemd_unit) — gère les unités systemd (création, suppression, drop-ins).  

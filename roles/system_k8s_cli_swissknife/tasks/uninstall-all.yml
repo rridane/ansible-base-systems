@@ -6,7 +6,7 @@
   loop: "{{ tools_to_remove }}"
   become: true
 
-- name: "Uninstall | remove jq package"
+- name: "Uninstall | remove jq (APT)"
   ansible.builtin.apt:
     name: jq
     state: absent

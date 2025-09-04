@@ -1,9 +1,13 @@
----
 tools_state: present   # present | absent
+
+bin_path: "/usr/local/bin"
+
+system_arch: "'amd64'"
+
 tools:
   krew:
     enabled: true
-    version: ""
+    version: ""           # "" => dernière release krew
     krew_root: "/opt/krew"
     plugins:
       - ctx
@@ -20,17 +24,17 @@ tools:
   k9s:
     enabled: true
     version: ""
-    arch: "amd64"
+    arch: "{{ system_arch }}"
 
   kustomize:
     enabled: true
     version: ""
-    arch: "amd64"
+    arch: "{{ system_arch }}"
 
   helm:
     enabled: true
     version: ""
-    arch: "amd64"
+    arch: "{{ system_arch }}"
 
   jq:
     enabled: true
@@ -39,22 +43,19 @@ tools:
   yq:
     enabled: true
     version: ""
-    arch: "amd64"
+    arch: "{{ system_arch }}"
 
   kubent:
     enabled: true
     version: ""
-    arch: "amd64"
+    arch: "{{ system_arch }}"
 
   popeye:
     enabled: true
     version: ""
-    arch: "amd64"
+    arch: "{{ system_arch }}"
 
-bin_path: "/usr/local/bin"
-system_arch: "amd64"
-
-# ABSENT (when tools_state == "absent")
+# Uninstall (binaires “posés” par le rôle)
 tools_to_remove:
   - helm
   - k9s
@@ -62,8 +63,3 @@ tools_to_remove:
   - kubent
   - popeye
   - yq
-
-# Où l’on pose le script d’export PATH de krew
-krew_profile_script_dir: "/etc/profile.d"
-krew_profile_script_name: "krew.sh"
-krew_profile_script_path: "{{ krew_profile_script_dir }}/{{ krew_profile_script_name }}"

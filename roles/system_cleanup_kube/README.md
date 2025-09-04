@@ -15,9 +15,51 @@ Par défaut, le rôle **demande confirmation** (`yes`) avant d’exécuter les o
 En CI/non-interactif, désactive la pause et fournis l’ack :
 
 ```yaml
+# min exemple
 kube_ask_confirmation: false
 kube_cleanup_ack: "yes"
 ```
+
+```yaml
+# Full interactive exemple
+# playbooks/kube_cleanup.yml
+- name: Clean a Kubernetes node (interactif)
+  hosts: mynode01
+  become: true
+  roles:
+    - role: rridane.base_systems.kube_cleanup
+      vars:
+        kube_cri_socket: "/var/run/containerd/containerd.sock"
+        kube_ask_confirmation: true           # will prompt yes
+        kube_cleanup_enabled: true
+        kube_cleanup_packages: true           # purge kubeadm/kubelet/kubectl
+        kube_cleanup_cni: true                # clean /etc/cni/net.d + interfaces
+        kube_cleanup_calico: true             # clean Calico best-effort
+```
+
+```yaml
+# Full non interactive exemple (CI) 
+# playbooks/kube_cleanup.yml
+- name: Clean a Kubernetes node (non-interactif)
+  hosts: mynode01
+  become: true
+  roles:
+    - role: rridane.base_systems.kube_cleanup
+      vars:
+        kube_cri_socket: "/var/run/containerd/containerd.sock"
+        kube_ask_confirmation: false
+        kube_cleanup_ack: "yes"
+        kube_cleanup_enabled: true
+        kube_cleanup_packages: true
+        kube_cleanup_cni: true
+        kube_cleanup_calico: true
+```
+
+```shell
+ansible-playbook -i inventory/hosts playbooks/kube_cleanup.yml
+```
+
+## Variables
 
 | Variable               | Défaut                                 | Description                                      |
 |------------------------|----------------------------------------|--------------------------------------------------|

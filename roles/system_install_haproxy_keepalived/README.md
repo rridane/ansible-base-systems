@@ -89,6 +89,15 @@ ansible-galaxy install -r requirements.yml
         keepalived_priority_master: 101
         keepalived_priority_backup: 100
         keepalived_virtual_router_id: 100
-
 ```
 
+```yaml
+# Clean haproxy keepalived + purge des confs
+- hosts: lb_nodes
+  become: true
+  roles:
+    - role: rridane.haproxy_keepalived
+      vars:
+        haproxy_keepalived_state: absent
+        haproxy_keepalived_purge: true
+```

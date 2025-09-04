@@ -12,12 +12,22 @@ Le rôle agit de manière **idempotente** : il commente/décommente les entrées
 ## Exemple d’utilisation
 
 ```yaml
+# Désactive le swap (recommandé pour kubernetes)
 - hosts: all
   become: true
   roles:
     - role: rridane.base_systems.system-configure-swap
       vars:
-        swap_enabled: true
+        swap_enabled: false # Désactive le swap
+```
+
+```yaml
+- hosts: all
+  become: true
+  roles:
+    - role: rridane.base_systems.system-configure-swap
+      vars:
+        swap_enabled: false # Réactive le swap
 ```
 
 ## Notes

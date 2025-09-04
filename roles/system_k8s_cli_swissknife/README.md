@@ -1,174 +1,121 @@
-# system-k8s-cli-swissknife
+# Ansible Role: rridane.system-k8s-cli-swissknife
 
-Bundle d’outils **CLI Kubernetes** (`kubectl`, `krew` + plugins, `k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye`) pour **Debian/Ubuntu**.  
-Objectif : une **boîte à outils prête à l’emploi**, idempotente, et facilement **pilotée par variables**.
+Bundle d’outils **CLI Kubernetes** (**hors kubectl**) :  
+`krew` (+ plugins), `k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye` pour **Debian/Ubuntu**.
+
+🎯 Objectif : une **boîte à outils prête à l’emploi**, idempotente, et facilement **pilotée par variables**.
 
 ---
 
 ## ✅ Compatibilité & prérequis
 
-- **OS** : Debian 12+, Ubuntu 20.04/22.04 (images Molecule supportées).
-- **Accès réseau** aux dépôts officiels/releases (pkgs.k8s.io, GitHub).
-- Paquets de base : `ca-certificates`, `gnupg`.
-- **krew** : nécessite `git` pour cloner l’index (`krew-index`).
+- **OS** : Debian 12+, Ubuntu 20.04/22.04.
+- **krew** : nécessite `git`.
+- **kubectl** : **non géré par ce rôle**.
+  - Si `kubectl` est absent, l’installation des **plugins krew** est **sautée**.
+  - krew reste installé et prêt à l’emploi une fois `kubectl` disponible.
 
 ---
 
-## 🚀 Ce que fait le rôle (vue d’ensemble)
+## ⚙️ Variables
 
-### krew
-- Télécharge la **release** (dernière ou version fixée), **bootstrap** krew dans `krew_root`.
-- Ajoute `/etc/profile.d/krew.sh`.
-- Installe la **liste de plugins** demandée (idempotent).
+### Globales
 
-### Autres outils (si activés)
-- `k9s`
-- `kustomize`
-- `helm`
-- `jq`
-- `yq`
-- `kubent`
-- `popeye`
-
-## Variables
-
-### Variables globales
-
-```yaml
-bin_path: "/usr/local/bin"
-system_arch: "amd64"
-```
-
-```yaml
-tools:
-  krew:
-    enabled: true
-    version: ""     # "" => dernière release krew
-    krew_root: "/opt/krew"
-    plugins:
-      - ctx
-      - ns
-      - neat
-      - view-secret
-      - who-can
-      - rbac-view
-      - tree
-      - node-shell
-      - stern
-      - oidc-login
-  k9s:
-    enabled: true
-    version: ""
-    arch: "amd64"
-  kustomize:
-    enabled: true
-    version: ""
-    arch: "amd64"
-  helm:
-    enabled: true
-    version: ""
-    arch: "amd64"
-  jq:
-    enabled: true
-    version: ""
-  yq:
-    enabled: true
-    version: ""
-    arch: "amd64"
-  kubent:
-    enabled: true
-    version: ""
-    arch: "amd64"
-  popeye:
-    enabled: true
-    version: ""
-    arch: "amd64"
-
-```
+- `tools_state` (`present` | `absent`)  
+  État global : installer/configurer ou désinstaller.
+- `bin_path` : chemin où installer les binaires (défaut `/usr/local/bin`).
+- `system_arch` : architecture (`amd64` ou `arm64`).
 
 ### `tools.krew`
 
-| Clé       | Type | Défaut    | Notes |
-|-----------|------|-----------|-------|
-| enabled   | bool | true      | Active/désactive. |
-| version   | str  | ""        | `""` ⇒ dernière release. |
-| krew_root | str  | /opt/krew | Racine d’installation. |
-| plugins   | list | (voir YAML) | Plugins à installer via `kubectl-krew`. |
+- `enabled` (bool, défaut `true`) – active/désactive krew.
+- `version` (str, défaut `""`) – version, `""` = dernière release.
+- `krew_root` (str, défaut `/opt/krew`) – racine d’installation.
+- `plugins` (list) – plugins à installer via `kubectl krew` (skippés si `kubectl` absent).
+
+### Autres outils (`k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye`)
+
+- `enabled` (bool) – active/désactive l’outil.
+- `version` (str) – `""` = dernière release.
+- `arch` (str) – `amd64` ou `arm64` (si applicable).
 
 ---
 
-### Autres (`k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye`)
+## 🧩 Ce que le rôle fait
 
-| Clé     | Type | Défaut | Notes |
-|---------|------|--------|-------|
-| enabled | bool | true   | Active/désactive l’outil. |
-| version | str  | ""     | `""` ⇒ dernière release stable (selon implémentation du rôle). |
-| arch    | str  | amd64  | Si pertinent pour l’outil (binaire). |
+- **krew** :
+  - Télécharge et installe le binaire.
+  - Ajoute `/etc/profile.d/krew.sh` pour le PATH.
+  - Installe les plugins si `kubectl` est présent, sinon affiche un avertissement.
 
+- **Autres outils** :
+  - Télécharge et installe les binaires (ou paquets pour `jq`).
+  - Crée les fichiers dans `{{ bin_path }}`.
 
-## 🔍 Comportement détaillé
+- **Désinstallation (`tools_state: absent`)** :
+  - Supprime les binaires gérés (`helm`, `k9s`, `kustomize`, `kubent`, `popeye`, `yq`).
+  - Désinstalle `jq` via APT.
+  - Supprime `krew_root` et le script PATH (`/etc/profile.d/krew.sh`).
 
-### kubectl (via APT pkgs.k8s.io)
+---
 
-**Résolution de version**
-- `version == ""` ⇒ fetch [https://dl.k8s.io/release/stable.txt](https://dl.k8s.io/release/stable.txt) → ex. `v1.30.4`.
-- Déduit la série `vX.Y` (ex. `v1.30`) pour l’URL pkgs.k8s.io.
+## 🚀 Exemples
 
-**Dépôt & clé**
-- Télécharge `Release.key`, dearmor vers `/etc/apt/keyrings/kubernetes-archive-keyring.gpg` (en `0644`).
-- Ajoute le dépôt :
-  ```text
-  deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://pkgs.k8s.io/core:/stable:/vX.Y/deb/ /
-  ```
-- Si une version précise a été résolue (ex. v1.30.4), le rôle tente de pinner via la version APT exacte (ex. 1.30.4-1.1) résolue par apt-cache madison.
-- Sinon, installe la dernière disponible dans la série.
-
-💡 Astuce : en cas d’absence de correspondance APT exacte, le rôle retombe proprement sur l’installation sans pin (dernière de la série).
-
-### krew
-
-- Récupère la **dernière version** (ou celle demandée) depuis GitHub.
-- **Bootstrap** krew via le binaire krew-linux_<arch> (nécessite git installé).
-- Crée /etc/profile.d/krew.sh pour exposer {{ krew_root }}/bin dans le PATH.
-- Installe les **plugins listés** si non présents (**idempotent**).
-
-## Exemples
-
+👉 Mettre exemple installation ici
 ```yaml
-tools:
-  kubectl:
-    enabled: true
-    version: ""      # => dernière stable
-  krew:
-    enabled: true
-    version: ""
-    krew_root: "/opt/krew"
-    plugins:
-      - ctx
-      - ns
-      - stern
-      - oidc-login
-  k9s:
-    enabled: false
-  helm:
-    enabled: false
+# installation simple
+- hosts: all
+  become: true
+  roles:
+    - role: rridane.system-k8s-cli-swissknife
+      vars:
+        tools_state: present
+        tools:
+          krew:
+            enabled: true
+            version: ""
+            krew_root: "/opt/krew"
+            plugins:
+              - ctx
+              - ns
+              - stern
+              - oidc-login
+          k9s:
+            enabled: true
+            version: "0.32.5"
+          helm:
+            enabled: true
+            version: "3.13.3"
+          jq:
+            enabled: true
+          yq:
+            enabled: false
 ```
 
 ```yaml
-tools:
-  kubectl:
-    enabled: true
-    version: "v1.30.3"   # le rôle résoudra la version APT exacte
-  krew:
-    enabled: true
-    version: ""
-    krew_root: "/opt/krew"
-    plugins: [ "neat", "view-secret", "who-can" ]
-  k9s:
-    enabled: true
-    version: "0.32.5"
-  helm:
-    enabled: true
-    version: "3.13.3"
-
+- hosts: all
+  become: true
+  roles:
+    - role: rridane.system-k8s-cli-swissknife
+      vars:
+        tools_state: absent
 ```
+
+---
+
+## ✅ Effets attendus
+
+- Tous les binaires activés présents dans `bin_path`.
+- `jq` installé via APT.
+- `krew` disponible dans le PATH via `/etc/profile.d/krew.sh`.
+- Plugins krew installés si `kubectl` est présent.
+- En mode `absent`, tout est proprement retiré (hors kubectl).
+
+---
+
+## 📝 Notes
+
+- Ce rôle **ne gère pas kubectl**.
+- `jq` est géré via APT, les autres via binaires GitHub.
+- Plugins krew : **idempotents** si `kubectl` est installé.
+- Testé sur Debian 12 et Ubuntu 20.04/22.04.

@@ -1,30 +1,26 @@
----
 argument_specs:
   main:
-    short_description: "Install k9s tool"
+    short_description: "Installer/désinstaller un bundle d'outils CLI Kubernetes (hors kubectl)"
     description:
-      - "Installe K9s depuis les releases GitHub."
-      - "Par défaut, installe la dernière version stable."
+      - "Gère krew (binaire + PATH, plugins si kubectl déjà présent) et divers outils (k9s, kustomize, helm, jq, yq, kubent, popeye)."
+      - "Ne gère PAS kubectl."
     options:
-      k9s_version:
+      tools_state:
         type: str
-        required: false
-        default: ""
-        description:
-          - "Version spécifique de K9s à installer (ex: '0.32.4')."
-          - "Si vide, la dernière version sera automatiquement utilisée."
-      k9s_arch:
+        choices: [present, absent]
+        default: present
+      bin_path:
         type: str
-        required: false
-        default: "amd64"
-        choices: ["amd64", "arm64"]
-        description:
-          - "Architecture de la machine cible."
-          - "Correspond au suffixe des binaires K9s sur GitHub."
-      k9s_bin_path:
-        type: str
-        required: false
         default: "/usr/local/bin"
-        description:
-          - "Chemin de destination du binaire K9s."
-          - "Doit être présent dans le PATH pour être exécuté."
+      system_arch:
+        type: str
+        default: "amd64"
+      tools:
+        type: dict
+        default: {}
+      krew_profile_script_dir:
+        type: str
+        default: "/etc/profile.d"
+      krew_profile_script_name:
+        type: str
+        default: "krew.sh"
