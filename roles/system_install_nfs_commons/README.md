@@ -1,4 +1,4 @@
-# Ansible Role: rridane.nfs_common
+# Ansible Role: rridane.base_systems.system_install_nfs_commons
 
 Rôle ultra-simple pour **installer/désinstaller le client NFS**.  
 Sur Debian/Ubuntu, installe le paquet `nfs-common`.
@@ -8,7 +8,7 @@ Sur Debian/Ubuntu, installe le paquet `nfs-common`.
 ## 🚀 Installation
 
 ```bash
-ansible-galaxy install rridane.nfs_common
+ansible-galaxy install rridane.base_systems.system_install_nfs_commons
 ```
 
 | Variable                         | Défaut                                   | Description                                                       |
@@ -22,7 +22,7 @@ ansible-galaxy install rridane.nfs_common
 - hosts: all
   become: true
   roles:
-    - role: rridane.nfs_common
+    - role: rridane.base_systems.system_install_nfs_commons
       vars:
         nfs_common_state: present
 ```
@@ -33,7 +33,7 @@ ansible-galaxy install rridane.nfs_common
 - hosts: all
   become: true
   roles:
-    - role: rridane.nfs_common
+    - role: rridane.base_systems.system_install_nfs_commons
       vars:
         nfs_common_state: absent
 

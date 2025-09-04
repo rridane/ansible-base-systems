@@ -1,4 +1,4 @@
-# Ansible Role: rridane.kube_packages
+# Ansible Role: rridane.base_systems.system_install_kube_packages
 
 Ce rôle gère l’installation ou la purge des paquets **Kubernetes** (`kubeadm`, `kubelet`, `kubectl`) sur Debian/Ubuntu.  
 Il utilise les dépôts officiels `pkgs.k8s.io` et prend en charge l’état **present/absent**.
@@ -8,7 +8,7 @@ Il utilise les dépôts officiels `pkgs.k8s.io` et prend en charge l’état **p
 ## 🚀 Installation
 
 ```bash
-ansible-galaxy install rridane.kube_packages
+ansible-galaxy install rridane.base_systems.system_install_kube_packages
 ```
 
 ## ⚙️ Variables
@@ -36,7 +36,7 @@ ansible-galaxy install rridane.kube_packages
 - hosts: all
   become: true
   roles:
-    - role: rridane.kube_packages
+    - role: rridane.base_systems.system_install_kube_packages
       vars:
         kube_state: present
         kube_version: "1.30.2-1.1"
@@ -48,7 +48,7 @@ ansible-galaxy install rridane.kube_packages
 - hosts: all
   become: true
   roles:
-    - role: rridane.kube_packages
+    - role: rridane.base_systems.system_install_kube_packages
       vars:
         kube_state: absent
 ```

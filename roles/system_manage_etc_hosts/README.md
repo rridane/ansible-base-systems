@@ -1,4 +1,4 @@
-# Ansible Role: rridane.base_systems.etc_hosts
+# Ansible Role: rridane.base_systems.system_manage_etc_hosts
 
 Ce rôle gère un **bloc Ansible-managé** dans `/etc/hosts` pour ajouter/retirer des entrées de manière **idempotente**.  
 Il crée un bloc délimité par des marqueurs `# ANSIBLE-MANAGED <block_name> BEGIN/END`, y insère vos lignes, et peut le supprimer proprement.
@@ -9,7 +9,7 @@ Il crée un bloc délimité par des marqueurs `# ANSIBLE-MANAGED <block_name> BE
 
 ```yaml
 # requirements.yml
-- name: rridane.base_systems.etc_hosts
+- name: rridane.base_systems.system_manage_etc_hosts
   version: ">=1.0.0"
 ```
 
@@ -55,7 +55,7 @@ etc_hosts:
 - hosts: all
   become: true
   roles:
-    - role: rridane.base_systems.etc_hosts
+    - role: rridane.base_systems.system_manage_etc_hosts
       vars:
         etc_hosts_state: present
         etc_hosts_block_name: "k8s-lab"
@@ -81,7 +81,7 @@ etc_hosts:
 - hosts: all
   become: true
   roles:
-    - role: rridane.base_systems.etc_hosts
+    - role: rridane.base_systems.system_manage_etc_hosts
       vars:
         etc_hosts_state: absent
         etc_hosts_block_name: "k8s-lab"

@@ -1,4 +1,4 @@
-# Ansible Role: rridane.base_systems.kube_cleanup
+# Ansible Role: rridane.base_systems.system_cleanup_kube
 
 Rôle **destructif** pour nettoyer un nœud Kubernetes :
 - `kubeadm reset --force` (avec socket CRI),
@@ -27,7 +27,7 @@ kube_cleanup_ack: "yes"
   hosts: mynode01
   become: true
   roles:
-    - role: rridane.base_systems.kube_cleanup
+    - role: rridane.base_systems.system_cleanup_kube
       vars:
         kube_cri_socket: "/var/run/containerd/containerd.sock"
         kube_ask_confirmation: true           # will prompt yes
@@ -44,7 +44,7 @@ kube_cleanup_ack: "yes"
   hosts: mynode01
   become: true
   roles:
-    - role: rridane.base_systems.kube_cleanup
+    - role: rridane.base_systems.system_cleanup_kube
       vars:
         kube_cri_socket: "/var/run/containerd/containerd.sock"
         kube_ask_confirmation: false

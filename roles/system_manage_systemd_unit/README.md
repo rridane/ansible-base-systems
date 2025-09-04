@@ -1,4 +1,4 @@
-# Ansible Role: systemd-unit
+# Ansible Role: rridane.base_systems.system_manage_systemd_unit
 
 Ce rôle permet de gérer des unités **systemd** de manière flexible : création, suppression, drop-ins, environment files,
 activation/désactivation et démarrage/redémarrage.
@@ -10,7 +10,7 @@ activation/désactivation et démarrage/redémarrage.
 `requirements.yml` :
 
 ```yaml
-- name: rridane.systemd_unit
+- name: rridane.base_systems.system_manage_systemd_unit
   version: ">=1.0.0"
 ```
 
@@ -22,7 +22,7 @@ ansible-galaxy install -r requirements.yml
 - hosts: all
   become: true
   roles:
-    - role: rridane.systemd_unit
+    - role: rridane.base_systems.system_manage_systemd_unit
       vars:
         unit_name: "myapp.service"
         unit_scope: "system"   # system | user
@@ -57,7 +57,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
 - hosts: all
   become: true
   roles:
-    - role: rridane.systemd_unit
+    - role: rridane.base_systems.system_manage_systemd_unit
       vars:
         unit_name: myapp.service
         unit_content: |
@@ -75,7 +75,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
 - hosts: all
   become: true
   roles:
-    - role: rridane.systemd_unit
+    - role: rridane.base_systems.system_manage_systemd_unit
       vars:
         unit_name: myapp.service
         unit_template_src: myapp.service.j2
@@ -88,7 +88,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
 - hosts: all
   become: true
   roles:
-    - role: rridane.systemd_unit
+    - role: rridane.base_systems.system_manage_systemd_unit
       vars:
         unit_name: myapp.service
         unit_src_path: files/myapp.service
@@ -100,7 +100,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
 - hosts: all
   become: true
   roles:
-    - role: rridane.systemd_unit
+    - role: rridane.base_systems.system_manage_systemd_unit
       vars:
         unit_name: "myapp.service"
         unit_scope: "system"
@@ -126,7 +126,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
 - hosts: all
   become: true
   roles:
-    - role: rridane.systemd_unit
+    - role: rridane.base_systems.system_manage_systemd_unit
       vars:
         unit_name: "myapp.service"
         unit_content: |
@@ -146,7 +146,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
 - hosts: all
   become: true
   roles:
-    - role: rridane.systemd_unit
+    - role: rridane.base_systems.system_manage_systemd_unit
       vars:
         unit_name: "myapp.service"
         unit_content: |
@@ -181,7 +181,7 @@ Le rôle accepte exactement **un** des trois modes suivants :
 - hosts: all
   become: true
   roles:
-    - role: rridane.systemd_unit
+    - role: rridane.base_systems.system_manage_systemd_unit
       vars:
         unit_name: "myapp.service"
         unit_present: false

@@ -13,13 +13,13 @@ Mode **absent** ⇒ retire modules + sysctl et **supprime** les fichiers `.conf`
 ## 🚀 Installation
 
 ```bash
-ansible-galaxy install rridane.base_systems.net_tuning
+ansible-galaxy install rridane.base_systems.system_configure_kernel_network_rules
 ```
 
 ou via **requirements.yml**:
 
 ```yaml
-- name: rridane.base_systems.net_tuning
+- name: rridane.base_systems.system_configure_kernel_network_rules
   version: ">=1.0.0" # à vérifier sur ansible-galaxy
 ```
 
@@ -71,7 +71,7 @@ ou via **requirements.yml**:
 - hosts: all
   become: true
   roles:
-    - role: rridane.net_tuning
+    - role: rridane.base_systems.system_configure_kernel_network_rules
       vars:
         net_tuning_modules:
           - overlay
@@ -89,7 +89,7 @@ ou via **requirements.yml**:
 - hosts: all
   become: true
   roles:
-    - role: rridane.net_tuning
+    - role: rridane.base_systems.system_configure_kernel_network_rules
       vars:
         net_tuning_state: absent
 

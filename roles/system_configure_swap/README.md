@@ -1,4 +1,4 @@
-# system-configure-swap
+# ansible role rridane.base_systems.system_configure_swap
 
 Active ou désactive le **swap** sur un système Linux (Ubuntu/Debian).  
 Le rôle agit de manière **idempotente** : il commente/décommente les entrées `swap` dans `/etc/fstab` et exécute `swapon`/`swapoff` pour appliquer immédiatement.
@@ -16,7 +16,7 @@ Le rôle agit de manière **idempotente** : il commente/décommente les entrées
 - hosts: all
   become: true
   roles:
-    - role: rridane.base_systems.system-configure-swap
+    - role: rridane.base_systems.system_configure_swap
       vars:
         swap_enabled: false # Désactive le swap
 ```
@@ -25,7 +25,7 @@ Le rôle agit de manière **idempotente** : il commente/décommente les entrées
 - hosts: all
   become: true
   roles:
-    - role: rridane.base_systems.system-configure-swap
+    - role: rridane.base_systems.system_configure_swap
       vars:
         swap_enabled: false # Réactive le swap
 ```

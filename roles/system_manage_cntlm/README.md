@@ -1,4 +1,4 @@
-# Ansible Role: rridane.cntlm
+# Ansible Role: rridane.base_systems.system_manage_cntlm
 
 Ce rôle installe et configure **CNTLM** (proxy NTLM/NTLMv2) depuis les sources, mais il ne créé par la configuration systemd, envisagez l'utilisation de **rridane.base_systems.system_manage_systemd_unit** si c'est un besoin. 
 Supporte les états **present/absent**.
@@ -10,7 +10,7 @@ Supporte les états **present/absent**.
 `requirements.yml` :
 
 ```yaml
-- name: rridane.cntlm
+- name: rridane.base_systems.system_manage_cntlm
   version: ">=1.0.0"
 ```
 
@@ -44,7 +44,7 @@ ansible-galaxy install -r requirements.yml
 - hosts: all
   become: true
   roles:
-    - role: rridane.cntlm
+    - role: rridane.base_systems.system_manage_cntlm
       vars:
         cntlm_version: "0.94.0"
         cntlm_username: "john.doe"

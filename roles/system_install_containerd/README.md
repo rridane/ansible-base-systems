@@ -1,4 +1,4 @@
-# Ansible Role: rridane.containerd
+# Ansible Role: rridane.base_systems.system_install_containerd
 
 Ce rôle installe et configure **containerd** (service systemd, `config.toml`, registries via `hosts.toml`), gère l’activation/démarrage et optionnellement un proxy.  
 Supporte les états **present/absent**.
@@ -10,7 +10,7 @@ Supporte les états **present/absent**.
 `requirements.yml` :
 
 ```yaml
-- name: rridane.containerd
+- name: rridane.base_systems.system_install_containerd
   version: ">=1.0.0"
 ```
 
@@ -55,7 +55,7 @@ containerd_registries:
 - hosts: all
   become: true
   roles:
-    - role: rridane.containerd
+    - role: rridane.base_systems.system_install_containerd
       vars:
         containerd_state: present
         containerd_root: /mnt/data/containerd
@@ -83,7 +83,7 @@ containerd_registries:
 - hosts: all
   become: true
   roles:
-    - role: rridane.containerd
+    - role: rridane.base_systems.system_install_containerd
       vars:
         containerd_state: absent
 ```

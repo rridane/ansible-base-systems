@@ -1,4 +1,4 @@
-# Ansible Role: rridane.haproxy_keepalived
+# Ansible Role: rridane.base_systems.system_install_haproxy_keepalived
 
 Ce rôle installe et configure **HAProxy** (load balancer L4/L7) et **Keepalived** (VRRP pour IP virtuelle haute-disponibilité).  
 Il déploie les fichiers de configuration, active les services et vérifie leur bon fonctionnement.  
@@ -11,7 +11,7 @@ Supporte les états **present/absent**.
 `requirements.yml` :
 
 ```yaml
-- name: rridane.haproxy_keepalived
+- name: rridane.base_systems.system_install_haproxy_keepalived
   version: ">=1.0.0"
 ```
 
@@ -70,7 +70,7 @@ ansible-galaxy install -r requirements.yml
 - hosts: lb_nodes
   become: true
   roles:
-    - role: rridane.haproxy_keepalived
+    - role: rridane.base_systems.system_install_haproxy_keepalived
       vars:
         haproxy_username: haproxy
         haproxy_groupname: haproxy
@@ -96,7 +96,7 @@ ansible-galaxy install -r requirements.yml
 - hosts: lb_nodes
   become: true
   roles:
-    - role: rridane.haproxy_keepalived
+    - role: rridane.base_systems.system_install_haproxy_keepalived
       vars:
         haproxy_keepalived_state: absent
         haproxy_keepalived_purge: true

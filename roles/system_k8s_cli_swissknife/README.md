@@ -1,4 +1,4 @@
-# Ansible Role: rridane.system-k8s-cli-swissknife
+# Ansible Role: rridane.base_systems.system_k8s_cli_swissknife
 
 Bundle d’outils **CLI Kubernetes** (**hors kubectl**) :  
 `krew` (+ plugins), `k9s`, `kustomize`, `helm`, `jq`, `yq`, `kubent`, `popeye` pour **Debian/Ubuntu**.
@@ -67,7 +67,7 @@ Bundle d’outils **CLI Kubernetes** (**hors kubectl**) :
 - hosts: all
   become: true
   roles:
-    - role: rridane.system-k8s-cli-swissknife
+    - role: rridane.base_systems.system_k8s_cli_swissknife
       vars:
         tools_state: present
         tools:
@@ -96,7 +96,7 @@ Bundle d’outils **CLI Kubernetes** (**hors kubectl**) :
 - hosts: all
   become: true
   roles:
-    - role: rridane.system-k8s-cli-swissknife
+    - role: rridane.base_systems.system_k8s_cli_swissknife
       vars:
         tools_state: absent
 ```

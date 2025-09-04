@@ -1,4 +1,4 @@
-# Ansible Role: rridane.base_systems.system_proxy
+# Ansible Role: rridane.base_systems.system_configure_proxy
 
 Configure proprement les proxys **système** :
 - **APT** (`/etc/apt/apt.conf.d/99-proxy.conf`)
@@ -14,7 +14,7 @@ Gère les états **present/absent** et fusionne automatiquement `no_proxy_list` 
 `requirements.yml` :
 
 ```yaml
-- name: rridane.base_systems.system_proxy
+- name: rridane.base_systems.system_configure_proxy
   version: ">=1.0.0"
 ```
 
@@ -44,7 +44,7 @@ ansible-galaxy install -r requirements.yml
 - hosts: all
   become: true
   roles:
-    - role: rridane.base_systems.system_proxy
+    - role: rridane.base_systems.system_configure_proxy
       vars:
         http_proxy: "http://proxy.example:3128"
         # https_proxy: ""       # ← http_proxy si vide
